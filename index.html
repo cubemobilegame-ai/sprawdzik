@@ -913,6 +913,7 @@ Rules:
 - For every task with status "check" ALSO give: "doubt": one of "illegible" (handwriting hard to read), "two_marks" (more than one option marked or unclear final choice), "line" (unclear matching line), "content" (reading is clear, grading of the content is uncertain), "other"; "question": one very short question in Polish for the teacher, max 7 words, answerable at a glance (e.g. "Czy nad „a” jest akcent?", "Które zakreślenie jest ostateczne: B czy C?", "Czy odpowiedź zawiera uzasadnienie?"); "options": 2–3 choices, most likely first, each {"label": Polish, max 3 words, "answer": the reading for that choice (short), "points": points that choice earns under the rules}; "spot": [x,y,w,h] tight box around the exact disputed letter, mark or line (fractions of the page).
 ${S.accents?"":"- Accents/diacritics do NOT count: never create a doubt only about a missing or unclear accent — treat the word as correct with full points."}
 - "answer": EXACT transcription of what the student wrote or marked, in the sheet's language. NO comments, NO descriptions, NO translations, NO English words that are not on the sheet. Put any remark in "reason" instead. "correct": the expected answer (short).
+- If a blank or item is left empty or unanswered, use "" as its answer — never describe the picture, the item or the task instead.
 - Self-corrections: if the student crossed out an answer and wrote another one (next to it, above it or in the margin), the new one is the final answer — grade it, do not mark the crossed-out word as an error.
 - Tasks with several blanks or numbered sub-answers (e.g. (1)…(9)): keep it ONE task, but add "items" listing ONLY the sub-answers that are wrong or doubtful: [{"n":"(4)","answer":"what student wrote","correct":"expected"}]. Do not list correct sub-answers. In that case set "answer" to "" and "correct" to "".
 - NEVER output the student's name, class or any personal data.
@@ -1075,7 +1076,7 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
     const t=o.t,vc=Math.min(1,Math.max(0,+v.confidence||0)),vp=Math.min(t.max,Math.max(0,+v.points||0));
     const vs=["ok","partial","wrong","check"].includes(v.status)?v.status:"check";
     const same=norm(v.answer)===norm(t.answer);
-    if(same||vc>=0.9){
+    if(same||vc>=0.9||(t.items&&t.items.length)||(!t.answer&&!v.answer)){
       t.answer=String(v.answer??t.answer);t.points=vp;t.conf=vc;
       t.status=vc<0.85?"check":vs;t.reason=String(v.reason||"");
       if(t.status==="check"){if(v.doubt)t.doubt=String(v.doubt);if(v.question)t.question=String(v.question).slice(0,90);const op=cleanOptions(v.options,t.max);if(op)t.options=op}else{t.options=null;t.question=""}
@@ -1156,6 +1157,12 @@ function applyRules(t){
   if(!S.accents){
     if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
     if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>o.answer)&&new Set(t.options.map(o=>norm(o.answer))).size>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
+  }
+  const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
+  const concrete=(t.items&&t.items.some(x=>!eqI(x.answer,x.correct)))||(t.correct&&!eqI(t.correct,t.answer));
+  if(t.status==="check"&&!concrete){
+    if(t.points>=t.max){t.status="ok";t.options=null;t.question="";return}
+    if(!t.reason||/co napisał uczeń/i.test(t.question||"")){t.question="";t.reason=t.reason||"Sprawdź odpowiedź"}
   }
   if(t.status==="check"&&!t.options){
     t.options=t.max>=1?[{label:"Dobrze",answer:"",points:t.max},{label:"Połowa",answer:"",points:Math.round(t.max)/2},{label:"Źle",answer:"",points:0}]:[{label:"Dobrze",answer:"",points:t.max},{label:"Źle",answer:"",points:0}];
