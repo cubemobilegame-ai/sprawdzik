@@ -1,4 +1,4 @@
-# Sprawdzik – wersja testowa na Vercel
+# EduSkan – wersja testowa na Vercel
 
 Aplikacja dla nauczycieli: skan pracy aparatem, automatyczne sprawdzanie przez Claude API.
 

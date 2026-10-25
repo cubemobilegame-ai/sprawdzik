@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Sprawdzik</title>
+<title>EduSkan</title>
 <meta name="description" content="Sprawdzanie kartkówek i sprawdzianów aparatem telefonu.">
-<meta name="theme-color" content="#2846D2">
+<meta name="theme-color" content="#312E81">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Sprawdzik">
+<meta name="apple-mobile-web-app-title" content="EduSkan">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <link rel="icon" type="image/png" href="/icon-512.png">
 <link rel="manifest" href="/manifest.json">
@@ -21,21 +21,21 @@
 <style>
 /* Layout: one-screen phone app; views swap inside a full-height shell, bottom action bar, red-pen marks drawn over the scanned page */
 :root{
-  --paper:#F4F6FA; --surface:#FFFFFF; --ink:#15213A; --muted:#5A6680; --line:#DDE3EE;
-  --blue:#2846D2; --blue-ink:#FFFFFF; --pen:#D3263C; --ok:#1E8757; --warn:#B86E00;
-  --okbg:#E6F4EC; --warnbg:#FFF2DC; --penbg:#FCE8EA; --shade:rgba(21,33,58,.55);
+  --paper:#F5F5FB; --surface:#FFFFFF; --ink:#1A1A3A; --muted:#5D5F7E; --line:#E0E0EE;
+  --blue:#312E81; --blue-ink:#FFFFFF; --teal:#0E8A7D; --hero:#312E81; --pen:#E11D48; --ok:#0E8A7D; --warn:#B86E00;
+  --okbg:#E0F5F2; --warnbg:#FFF2DC; --penbg:#FDE7EC; --shade:rgba(21,33,58,.55);
   --f-display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
   --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
   --f-pen:"Caveat","Comic Sans MS",cursive;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#080C17; --surface:#18223B; --ink:#EEF1F8; --muted:#A4AEC5; --line:#2D3A58;
-  --blue:#7D93FF; --blue-ink:#0D1321; --pen:#FF6275; --ok:#43CC8E; --warn:#F3AA3C;
-  --okbg:#14322A; --warnbg:#3A2C12; --penbg:#3A1820; --shade:rgba(0,0,0,.65); color-scheme:dark}}
+  --paper:#0B0B1A; --surface:#1B1A36; --ink:#EEEEF8; --muted:#A6A7C4; --line:#302F57;
+  --blue:#A5B4FC; --blue-ink:#11113A; --teal:#2DD4BF; --hero:#2A2870; --pen:#FB7185; --ok:#2DD4BF; --warn:#F3AA3C;
+  --okbg:#0F3330; --warnbg:#3A2C12; --penbg:#3D1524; --shade:rgba(0,0,0,.65); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#080C17; --surface:#18223B; --ink:#EEF1F8; --muted:#A4AEC5; --line:#2D3A58;
-  --blue:#7D93FF; --blue-ink:#0D1321; --pen:#FF6275; --ok:#43CC8E; --warn:#F3AA3C;
-  --okbg:#14322A; --warnbg:#3A2C12; --penbg:#3A1820; --shade:rgba(0,0,0,.65); color-scheme:dark}
+  --paper:#0B0B1A; --surface:#1B1A36; --ink:#EEEEF8; --muted:#A6A7C4; --line:#302F57;
+  --blue:#A5B4FC; --blue-ink:#11113A; --teal:#2DD4BF; --hero:#2A2870; --pen:#FB7185; --ok:#2DD4BF; --warn:#F3AA3C;
+  --okbg:#0F3330; --warnbg:#3A2C12; --penbg:#3D1524; --shade:rgba(0,0,0,.65); color-scheme:dark}
 html,body{height:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
 *{box-sizing:border-box}
@@ -47,7 +47,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand h1{font-size:24px}
-.mark{width:34px;height:34px;border-radius:9px;background:var(--blue);display:grid;place-items:center;color:var(--blue-ink);font-family:var(--f-pen);font-size:26px;line-height:1}
+.mark{width:36px;height:36px;flex:none;display:block}
 .badge{font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:99px;border:1.5px solid var(--line);color:var(--muted)}
 .badge.pro{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
 .icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--muted)}
@@ -63,10 +63,10 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .btn.ghost{background:transparent}
 .btn.danger{color:var(--pen)}
 .btn[disabled]{opacity:.5;pointer-events:none}
-.scan-hero{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:22px;background:var(--blue);color:var(--blue-ink)}
+.scan-hero{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:22px;background:var(--hero);color:#fff}
 .scan-hero h2{font-size:26px;line-height:1.1}
 .scan-hero p{margin:0;opacity:.85}
-.scan-hero .btn{background:var(--blue-ink);color:var(--blue);border-color:transparent;min-height:58px;font-size:17px}
+.scan-hero .btn{background:#fff;color:#312E81;border-color:transparent;min-height:58px;font-size:17px}
 .meter{height:6px;border-radius:9px;background:var(--line);overflow:hidden}
 .meter i{display:block;height:100%;background:var(--blue);border-radius:9px}
 .key-state{display:flex;gap:12px;align-items:flex-start}
@@ -111,11 +111,11 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .sheet-wrap{display:flex;flex-direction:column;gap:12px}
 .sheet{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff;max-width:100%}
 .sheet img{display:block;width:100%}
-.pm{position:absolute;transform:translate(-4px,-50%);font-family:var(--f-pen);font-weight:700;font-size:clamp(18px,5.4vw,28px);line-height:1;white-space:nowrap;padding:0 2px;color:#D3263C;text-shadow:0 0 3px #fff,0 0 3px #fff}
-.pm.ok{color:#1E8757}
+.pm{position:absolute;transform:translate(-4px,-50%);font-family:var(--f-pen);font-weight:700;font-size:clamp(18px,5.4vw,28px);line-height:1;white-space:nowrap;padding:0 2px;color:#E11D48;text-shadow:0 0 3px #fff,0 0 3px #fff}
+.pm.ok{color:#0E8A7D}
 .pm.chk{color:#B86E00;border:2px solid #B86E00;border-radius:50%;padding:2px 8px;background:rgba(255,242,220,.85);text-shadow:none}
 .box{position:absolute;border:2px solid #B86E00;border-radius:6px;background:rgba(243,170,60,.12);pointer-events:none}
-.stamp{position:absolute;right:3%;top:2%;font-family:var(--f-pen);color:#D3263C;font-size:clamp(24px,7vw,40px);line-height:.95;text-align:right;transform:rotate(-5deg);text-shadow:0 0 4px #fff,0 0 4px #fff}
+.stamp{position:absolute;right:3%;top:2%;font-family:var(--f-pen);color:#E11D48;font-size:clamp(24px,7vw,40px);line-height:.95;text-align:right;transform:rotate(-5deg);text-shadow:0 0 4px #fff,0 0 4px #fff}
 .tasks{display:flex;flex-direction:column;gap:10px}
 .task{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;scroll-margin-top:16px}
 .task.chk{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn)}
@@ -158,8 +158,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
 .pgsel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .pgsel span{grid-column:1/-1;font-size:14px;opacity:.85}
-.pgsel button{min-width:0;height:40px;border-radius:12px;font-weight:700;border:1.5px solid color-mix(in srgb,var(--blue-ink) 45%,transparent);color:var(--blue-ink)}
-.pgsel button[aria-pressed="true"]{background:var(--blue-ink);color:var(--blue);border-color:var(--blue-ink)}
+.pgsel button{min-width:0;height:40px;border-radius:12px;font-weight:700;border:1.5px solid rgba(255,255,255,.45);color:#fff}
+.pgsel button[aria-pressed="true"]{background:#2DD4BF;color:#11113A;border-color:#2DD4BF}
 .free{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ok);background:var(--okbg);padding:3px 8px;border-radius:99px}
 .ser-grade{width:34px;height:34px;border-radius:50%;border:2px solid var(--pen);color:var(--pen);display:grid;place-items:center;font-family:var(--f-pen);font-size:22px;font-weight:700;flex:none}
 .ser-spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--blue);border-top-color:transparent;animation:spin .8s linear infinite;flex:none}
@@ -215,9 +215,9 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .fadein{animation:fade .45s ease both}
 
 /* intro */
-.intro{position:fixed;inset:0;z-index:50;background:#0B1020;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#fff;transition:opacity .4s}
+.intro{position:fixed;inset:0;z-index:50;background:#11113A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#fff;transition:opacity .4s}
 .cube{width:64px;height:64px;position:relative;transform-style:preserve-3d;animation:cube 1.6s cubic-bezier(.6,.1,.3,1) forwards}
-.cube span{position:absolute;inset:0;border:2px solid #7D93FF;background:rgba(125,147,255,.12)}
+.cube span{position:absolute;inset:0;border:2px solid #2DD4BF;background:rgba(45,212,191,.12)}
 .cube span:nth-child(1){transform:translateZ(32px)}
 .cube span:nth-child(2){transform:rotateY(90deg) translateZ(32px)}
 .cube span:nth-child(3){transform:rotateX(90deg) translateZ(32px)}
@@ -232,10 +232,10 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
 <div class="intro" id="intro" aria-hidden="true"><div class="cube"><span></span><span></span><span></span><span></span><span></span><span></span></div><p>CUBE MOBILE APPS</p></div>
 
-<div class="rotate" aria-live="polite"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><b style="font-family:var(--f-display);font-size:20px">Obróć telefon pionowo</b><span class="muted">Sprawdzik działa tylko w pionie.</span></div>
+<div class="rotate" aria-live="polite"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><b style="font-family:var(--f-display);font-size:20px">Obróć telefon pionowo</b><span class="muted">EduSkan działa tylko w pionie.</span></div>
 <div class="onb" id="onb" hidden role="dialog" aria-label="Wprowadzenie">
   <div class="onb-in">
-    <div class="onb-top"><div class="brand"><div class="mark">✓</div><b style="font-family:var(--f-display);font-size:18px">Sprawdzik</b></div><button class="link" id="onbSkip">Pomiń</button></div>
+    <div class="onb-top"><div class="brand"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#312E81"/><path d="M16 24v-6a2 2 0 0 1 2-2h6M40 16h6a2 2 0 0 1 2 2v6M48 40v6a2 2 0 0 1-2 2h-6M24 48h-6a2 2 0 0 1-2-2v-6" stroke="#2DD4BF" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M23 33l6 6 12-14" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><b style="font-family:var(--f-display);font-size:18px">EduSkan</b></div><button class="link" id="onbSkip">Pomiń</button></div>
     <div class="onb-art" id="onbArt"></div>
     <div class="onb-slide" id="onbText"></div>
     <div class="onb-foot"><div class="dots" id="onbDots"><i></i><i></i><i></i></div><button class="btn primary" id="onbNext">Dalej</button></div>
@@ -247,7 +247,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
   <!-- HOME -->
   <section class="view tabbed" id="v-home">
     <div class="top">
-      <div class="brand"><div class="mark">✓</div><h1>Sprawdzik</h1><span class="badge" id="planBadge">FREE</span></div>
+      <div class="brand"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#312E81"/><path d="M16 24v-6a2 2 0 0 1 2-2h6M40 16h6a2 2 0 0 1 2 2v6M48 40v6a2 2 0 0 1-2 2h-6M24 48h-6a2 2 0 0 1-2-2v-6" stroke="#2DD4BF" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M23 33l6 6 12-14" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>EduSkan</h1><span class="badge" id="planBadge">FREE</span></div>
       <button class="icon-btn" id="openSettings" aria-label="Ustawienia"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
 
@@ -435,7 +435,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       <div class="small">Usunąć wzór odpowiedzi, skalę ocen i ustawienia? Licznik skanów i plan zostają.</div>
       <div class="row"><button class="btn grow" id="wipeNo">Anuluj</button><button class="btn grow danger" id="wipeYes">Usuń</button></div>
     </div>
-    <p class="small muted" style="margin:0;text-align:center">Sprawdzik 1.0.0 · Cube Mobile Apps</p>
+    <p class="small muted" style="margin:0;text-align:center">EduSkan 1.0.0 · Cube Mobile Apps</p>
   </section>
 
   <!-- DOCUMENT -->
@@ -455,7 +455,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
   <div class="overlay" id="paySheet" hidden>
     <div class="modal" role="dialog" aria-labelledby="payH">
-      <h2 id="payH" style="font-size:24px">Sprawdzik Pro</h2>
+      <h2 id="payH" style="font-size:24px">EduSkan Pro</h2>
       <p class="muted" style="margin:0" id="payLead">Wykorzystałeś 30 darmowych skanów. Przejdź na Pro i sprawdzaj bez limitu.</p>
       <ul class="feat"><li>Nielimitowane skanowanie prac</li><li>Wzory odpowiedzi do każdego sprawdzianu</li><li>Tryb dokładny dla trudnego pisma</li></ul>
       <div class="plans">
@@ -677,7 +677,7 @@ function renderMore(){const t=ls.get("theme","system");document.querySelectorAll
 
 /* ---------- onboarding ---------- */
 const ART={
- scan:`<svg viewBox="0 0 240 240" fill="none"><rect x="58" y="34" width="124" height="166" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><g stroke="var(--line)" stroke-width="2"><path d="M76 66h70M76 88h88M76 110h80M76 132h88M76 154h60M76 176h74"/></g><path d="M86 86l-3 4" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/><g stroke="var(--blue)" stroke-width="5" stroke-linecap="round"><path d="M40 52V30h22M200 52V30h-22M40 190v22h22M200 190v22h-22"/></g><rect x="40" y="118" width="160" height="3" rx="1.5" fill="var(--blue)" opacity=".7"/></svg>`,
+ scan:`<svg viewBox="0 0 240 240" fill="none"><rect x="58" y="34" width="124" height="166" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><g stroke="var(--line)" stroke-width="2"><path d="M76 66h70M76 88h88M76 110h80M76 132h88M76 154h60M76 176h74"/></g><path d="M86 86l-3 4" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/><g stroke="var(--teal)" stroke-width="5" stroke-linecap="round"><path d="M40 52V30h22M200 52V30h-22M40 190v22h22M200 190v22h-22"/></g><rect x="40" y="118" width="160" height="3" rx="1.5" fill="var(--blue)" opacity=".7"/></svg>`,
  grade:`<svg viewBox="0 0 240 240" fill="none"><rect x="50" y="30" width="140" height="180" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><g stroke="var(--line)" stroke-width="2"><path d="M68 70h80M68 104h80M68 138h80M68 172h60"/></g><g font-family="Caveat, cursive" font-weight="700" font-size="26"><text x="156" y="78" fill="var(--ok)">✓</text><text x="156" y="112" fill="var(--pen)">✗</text><text x="156" y="146" fill="var(--ok)">✓</text></g><rect x="62" y="158" width="76" height="24" rx="6" stroke="var(--warn)" stroke-width="2.5" fill="var(--warnbg)"/><text x="146" y="180" font-family="Caveat, cursive" font-weight="700" font-size="26" fill="var(--warn)">?</text><g transform="rotate(-8 172 46)"><circle cx="172" cy="46" r="24" fill="var(--surface)" stroke="var(--pen)" stroke-width="3"/><text x="172" y="58" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="36" fill="var(--pen)">5</text></g></svg>`,
  safe:`<svg viewBox="0 0 240 240" fill="none"><rect x="40" y="56" width="96" height="128" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 6"/><g stroke="var(--line)" stroke-width="2" opacity=".7"><path d="M56 86h62M56 108h56M56 130h62M56 152h40"/></g><path d="M160 46l44 16v38c0 34-24 56-44 66-20-10-44-32-44-66V62z" fill="var(--surface)" stroke="var(--ok)" stroke-width="4" stroke-linejoin="round"/><path d="M142 104l13 13 25-27" stroke="var(--ok)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
@@ -1134,7 +1134,7 @@ const F=t=>`<span class="fill">${t}</span>`;
 const DOCS={
 privacy:{t:"Polityka prywatności",l:"Wersja z 25.10.2026",b:`
 <h3>1. Kto odpowiada za dane</h3>
-<p>Aplikację Sprawdzik udostępnia ${F("[nazwa firmy, adres, NIP]")} działający pod marką Cube Mobile Apps (dalej: „my”). Kontakt w sprawach danych osobowych: cubemobilegame@gmail.com.</p>
+<p>Aplikację EduSkan udostępnia ${F("[nazwa firmy, adres, NIP]")} działający pod marką Cube Mobile Apps (dalej: „my”). Kontakt w sprawach danych osobowych: cubemobilegame@gmail.com.</p>
 <p>Prace uczniów skanuje nauczyciel w ramach swoich obowiązków. W stosunku do danych uczniów administratorem jest szkoła lub nauczyciel, a my przetwarzamy te dane wyłącznie na ich polecenie, w celu sprawdzenia pracy. Szkoła może zawrzeć z nami umowę powierzenia przetwarzania danych. Napisz do nas, a prześlemy wzór.</p>
 <h3>2. Zdjęcia prac uczniów</h3>
 <ul>
@@ -1156,7 +1156,7 @@ privacy:{t:"Polityka prywatności",l:"Wersja z 25.10.2026",b:`
 <p>O zmianach polityki poinformujemy w aplikacji. Aktualna wersja jest zawsze dostępna w zakładce Więcej.</p>`},
 terms:{t:"Regulamin",l:"Wersja z 25.10.2026",b:`
 <h3>1. Usługa</h3>
-<p>Sprawdzik pomaga nauczycielom sprawdzać prace pisemne uczniów na podstawie zdjęcia. Usługodawca: ${F("[nazwa firmy, adres, NIP]")}.</p>
+<p>EduSkan pomaga nauczycielom sprawdzać prace pisemne uczniów na podstawie zdjęcia. Usługodawca: ${F("[nazwa firmy, adres, NIP]")}.</p>
 <h3>2. Rola nauczyciela</h3>
 <p>Wynik aplikacji jest propozycją. Ostateczną ocenę zawsze ustala nauczyciel. Odczyt pisma odręcznego może zawierać błędy, dlatego aplikacja oznacza miejsca wymagające sprawdzenia.</p>
 <h3>3. Plan Free i Pro</h3>

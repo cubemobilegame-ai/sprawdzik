@@ -1,4 +1,4 @@
-// Sprawdzik – serwer pośredniczący do Claude API.
+// EduSkan – serwer pośredniczący do Claude API.
 // Trzyma klucz API po stronie serwera. Niczego nie zapisuje i nie loguje treści zdjęć.
 
 const MODELS = {
