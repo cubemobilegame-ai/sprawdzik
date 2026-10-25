@@ -200,6 +200,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .pt.on{border-color:var(--blue);background:var(--blue);color:var(--blue-ink)}
 .sum{display:flex;flex-direction:column;gap:4px;font-size:15px;padding:2px 2px 4px}
 .okc{color:var(--ok)}.badc{color:var(--pen)}.halfc{color:var(--warn)}
+.fix.col{flex-direction:column;align-items:flex-start;gap:4px}
+.fixrow{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -1087,10 +1089,28 @@ function orderIdx(tasks){return tasks.map((t,i)=>i).sort((a,b)=>{const A=tasks[a
 const DOUBT={illegible:["Nieczytelne pismo",'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'],two_marks:["Dwie odpowiedzi zaznaczone",'<path d="M3 12l4 4 8-8M11 16l1 1 9-9"/>'],line:["Niejasna linia",'<path d="M4 18C9 18 15 6 20 6"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/>'],content:["Ocena treści",'<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/>'],other:["Do sprawdzenia",'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>']};
 function doubtChip(t){const d=DOUBT[t.doubt]||DOUBT.other;return `<span class="chip chk dchip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d[1]}</svg>${d[0]}</span>`}
 function optsHtml(t){return (t.options||[]).map((o,i)=>{const c=o.points>=t.max?"g":o.points<=0?"r":"a";return `<button class="opt ${c}" data-o="${i}"><b>${esc(o.label)}</b><small>${fmt(o.points)} pkt</small></button>`}).join("")}
+function diffPairs(a,c){
+  const sp=x=>String(x||"").split(/\s*(?:[,;|\/\n]|\s[-–]\s)\s*/).map(s=>s.trim()).filter(Boolean);
+  const eq=(x,y)=>S.accents?norm(x)===norm(y):strip(x)===strip(y);
+  let A=sp(a),C=sp(c);
+  if(A.length<2&&C.length<2){A=String(a||"").trim().split(/\s+/).filter(Boolean);C=String(c||"").trim().split(/\s+/).filter(Boolean);if(!A.length||!C.length||A.length!==C.length||A.length>8)return null}
+  const ua=[...A],uc=[...C];
+  for(let i=ua.length-1;i>=0;i--){const j=uc.findIndex(y=>eq(ua[i],y));if(j>=0){ua.splice(i,1);uc.splice(j,1)}}
+  if(!ua.length&&!uc.length)return null;
+  const out=[],n=Math.max(ua.length,uc.length);for(let k=0;k<n;k++)out.push([ua[k]||"",uc[k]||""]);
+  return out;
+}
 function fixHtml(t){
   const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
-  if(c)return `<div class="fix"><span class="hand wrongtxt">${esc(t.answer||"—")}</span><span class="arr" aria-label="powinno być">→</span><b>${esc(c)}</b></div>`;
-  return `<div class="fix"><span class="hand">${esc(t.answer||"—")}</span><span class="small warnc">${esc(t.question||t.reason||"sprawdź")}</span></div>`;
+  if(c){
+    const pairs=diffPairs(t.answer,c);
+    if(pairs){
+      const rows=pairs.slice(0,4).map(([w,r])=>w&&r?`<div class="fixrow"><span class="hand wrongtxt">${esc(w)}</span><span class="arr">→</span><b>${esc(r)}</b></div>`:w?`<div class="fixrow"><span class="hand wrongtxt">${esc(w)}</span><span class="small muted">zbędne</span></div>`:`<div class="fixrow"><span class="small muted">brak</span><span class="arr">→</span><b>${esc(r)}</b></div>`).join("");
+      return `<div class="fix col">${rows}${pairs.length>4?`<div class="small muted">i jeszcze ${pairs.length-4}</div>`:""}</div>`;
+    }
+    if(String(t.answer).length<=30&&String(c).length<=30)return `<div class="fix"><span class="hand wrongtxt">${esc(t.answer||"—")}</span><span class="arr">→</span><b>${esc(c)}</b></div>`;
+  }
+  return `<div class="fix"><span class="small warnc">${esc(t.question||t.reason||"Sprawdź odpowiedź")}</span></div>`;
 }
 function ptsHtml(t){const v=[0];if(t.max>=1&&t.max%1===0&&t.max<=3)for(let k=1;k<=t.max;k++)v.push(k);else{if(t.max>=1)v.push(Math.round(t.max)/2);v.push(t.max)}
   return [...new Set(v)].map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}" data-p="${p}">${fmt(p)}</button>`).join("")+`<span class="small muted">pkt</span>`}
