@@ -430,7 +430,6 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="ser-tools">
       <button class="btn" id="serReview">Przejrzyj wątpliwości</button>
       <button class="btn" id="serPdf">PDF z wynikami</button>
-      <button class="btn" id="serLabels" style="grid-column:1/-1">Naklejki z wynikami (PDF)</button>
     </div>
     <div class="small muted" id="serMissing" hidden></div>
     <div class="list" id="serList"></div>
@@ -571,7 +570,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
         <div class="seg" style="grid-template-columns:1fr 1fr" role="group" aria-label="Sposób pracy"><button data-flow="one">Po jednej pracy</button><button data-flow="stack">Cały stos</button></div>
         <div class="small muted" id="flowHint"></div>
         <label class="switch" id="voiceRow"><span><b>Czytaj wyniki na głos</b><br><span class="small muted">Słuchasz i piszesz, bez patrzenia w telefon</span></span><input type="checkbox" id="voiceSw"></label>
-        <label class="switch"><span><b>Numer z dziennika</b><br><span class="small muted">Uczeń pisze swój numer w rogu kartki. Wyniki i naklejki ułożą się według numerów.</span></span><input type="checkbox" id="dnrSw"></label>
+        <label class="switch"><span><b>Numer z dziennika</b><br><span class="small muted">Uczeń pisze swój numer w rogu kartki. Wyniki w PDF ułożą się według numerów.</span></span><input type="checkbox" id="dnrSw"></label>
         <label class="row small" id="classRow" for="classSize"><span class="grow">Uczniów w klasie<br><span class="muted">pokaże, czyjej pracy brakuje</span></span><input class="field" id="classSize" type="number" min="0" max="60" inputmode="numeric" placeholder="np. 26" style="width:96px"></label>
       </div>
       <div class="panel">
@@ -881,36 +880,14 @@ async function resultsPdf(){
   const imgs=[];for(let i=0;i<pages.length;i++){const g=pages[i].g;g.fillStyle="#9A9BB5";g.font=`500 26px ${FONT}`;g.fillText(`EduSkan · strona ${i+1} z ${pages.length}`,M,PH-70);imgs.push(await toJpeg(pages[i].c))}
   return buildPdf(imgs);
 }
-async function labelsPdf(){
-  const list=sortedJobs();if(!list.length)return;
-  const C=3,Rw=8,cw=PW/C,ch=PH/Rw,pad=34,imgs=[];
-  for(let s=0;s<list.length;s+=C*Rw){
-    const P=newPage(),g=P.g;
-    g.strokeStyle="#C9CADB";g.lineWidth=2;g.setLineDash([10,10]);
-    for(let c=1;c<C;c++){g.beginPath();g.moveTo(c*cw,0);g.lineTo(c*cw,PH);g.stroke()}
-    for(let r=1;r<Rw;r++){g.beginPath();g.moveTo(0,r*ch);g.lineTo(PW,r*ch);g.stroke()}
-    g.setLineDash([]);
-    list.slice(s,s+C*Rw).forEach((j,k)=>{const x=(k%C)*cw+pad,y=Math.floor(k/C)*ch+pad,w=cw-2*pad,r=calc(j.res);
-      g.fillStyle="#1A1A3A";g.font=`700 40px ${FONT}`;g.fillText(j.res.dnr?`Nr ${j.res.dnr}`:`Praca ${j.n}`,x,y+38);
-      g.strokeStyle="#E11D48";g.lineWidth=4;g.beginPath();g.arc(x+w-46,y+44,44,0,Math.PI*2);g.stroke();
-      g.fillStyle="#E11D48";g.font=`700 50px ${FONT}`;g.textAlign="center";g.fillText(r.grade.g,x+w-46,y+62);g.textAlign="left";
-      g.fillStyle="#1A1A3A";g.font=`700 44px ${FONT}`;g.fillText(`${fmt(r.pts)} / ${fmt(r.max)} pkt`,x,y+104);
-      g.fillStyle="#3A3B5C";g.font=`500 30px ${FONT}`;
-      const parts=orderIdx(j.res.tasks).map(i=>{const t=j.res.tasks[i];return `${t.nr}: ${fmt(t.points)}/${fmt(t.max)}`});
-      const lines=[];let cur="";parts.forEach(pt=>{const t=cur?cur+"    "+pt:pt;if(g.measureText(t).width>w&&cur){lines.push(cur);cur=pt}else cur=t});if(cur)lines.push(cur);lines.slice(0,4).forEach((l,i)=>g.fillText(i===3&&lines.length>4?fit(g,l+" …",w):l,x,y+152+i*36));
-    });
-    imgs.push(await toJpeg(P.c));
-  }
-  return buildPdf(imgs);
-}
 async function makePdf(kind){
-  const btn=kind==="labels"?$("#serLabels"):$("#serPdf"),old=btn.textContent;btn.disabled=true;btn.textContent="Przygotowuję PDF…";
-  try{const b=kind==="labels"?await labelsPdf():await resultsPdf();if(b)await savePdf(b,pdfName(kind==="labels"?"naklejki":"wyniki"))}
+  const btn=$("#serPdf"),old=btn.textContent;btn.disabled=true;btn.textContent="Przygotowuję PDF…";
+  try{const b=await resultsPdf();if(b)await savePdf(b,pdfName("wyniki"))}
   catch(e){toast("Nie udało się utworzyć PDF")}
   finally{btn.textContent=old;btn.disabled=false}
 }
 $("#serPdf").onclick=()=>makePdf("results");
-$("#serLabels").onclick=()=>makePdf("labels");
+
 let RV={items:[],i:0,url:null};
 function reviewItems(){const out=[];S.jobs.forEach(j=>{if(j.status==="done"&&!j.refining)orderIdx(j.res.tasks).forEach(i=>{const t=j.res.tasks[i];if(stat(t)==="check")out.push({j,t})})});return out}
 async function openReview(){RV.items=reviewItems();RV.i=0;if(!RV.items.length){toast("Brak wątpliwości do przejrzenia");return}show("review");renderReview()}
@@ -1264,7 +1241,7 @@ function renderSeries(){
   $("#serGrades").innerHTML=Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="chip ${parseInt(g)>=3?"ok":parseInt(g)===2?"chk":"bad"}">ocena ${esc(g)}: ${dist[g]}</span>`).join("");
   const nCheck=S.jobs.reduce((a,j)=>a+(j.status==="done"?j.res.tasks.filter(t=>stat(t)==="check").length:0),0);
   $("#serReview").textContent=nCheck?`Przejrzyj wątpliwości (${nCheck})`:"Brak wątpliwości";$("#serReview").disabled=!nCheck;
-  ["#serPdf","#serLabels","#serMark"].forEach(s=>$(s).disabled=!done.length);
+  ["#serPdf","#serMark"].forEach(s=>$(s).disabled=!done.length);
   const ms=missingNrs();$("#serMissing").hidden=!ms;if(ms)$("#serMissing").textContent=(pend?"Jeszcze bez pracy: nr ":"Brak prac: nr ")+ms;
   const dup=dupNrs();
   const list=$("#serList");list.innerHTML="";
