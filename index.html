@@ -489,7 +489,7 @@ const serverAI={
     if(res.status===401){askCode(true);throw{code:"bad_code"}}
     if(res.status===429)throw{code:"rate_limited"};
     if(res.status===413)throw{code:"image_rejected"};
-    if(!res.ok)throw{code:res.status===500?"no_key":"upstream_error"};
+    if(!res.ok){let e="";try{e=(await res.json()).error||""}catch(x){}throw{code:["no_key","no_credits","bad_key","bad_model"].includes(e)?e:"upstream_error"}}
     const d=await res.json();
     S.cost+=+d.costPLN||0;
     return parseJSON(d.text||"");
@@ -650,6 +650,9 @@ function errText(e){
     case "session_expired":return "Sesja wygasła. Zaloguj się ponownie.";
     case "bad_code":return "Niepoprawny kod dostępu.";
     case "no_key":return "Serwer nie ma klucza API. Dodaj ANTHROPIC_API_KEY w ustawieniach Vercel.";
+    case "no_credits":return "Brak środków na koncie Anthropic. Doładuj konto w console.anthropic.com → Billing.";
+    case "bad_key":return "Klucz API jest nieprawidłowy lub usunięty. Sprawdź ANTHROPIC_API_KEY w Vercel.";
+    case "bad_model":return "Serwer nie znalazł modelu AI. Sprawdź ustawienia MODEL_FAST i MODEL_PRECISE.";
     default:return "Coś przerwało sprawdzanie. Spróbuj ponownie.";
   }
 }
