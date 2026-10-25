@@ -195,10 +195,12 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .wrongtxt{text-decoration:line-through;text-decoration-color:var(--pen);text-decoration-thickness:2px}
 .arr{color:var(--muted);font-weight:700}
 .warnc{color:var(--warn);font-weight:600}
-.pts{display:flex;align-items:center;gap:8px}
+.pts{display:flex;align-items:center;gap:8px;min-width:0}
+.ptrow{display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:2px;max-width:100%}
+.ptrow .pt{flex:none;min-width:48px}
 .pt{min-width:54px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
 .pt.on{border-color:var(--blue);background:var(--blue);color:var(--blue-ink)}
-.pt.sug{border-color:var(--blue);border-style:dashed}
+.pt.sug{border-color:var(--blue);border-style:dashed;border-width:2px;color:var(--blue)}
 .sum{display:flex;flex-direction:column;gap:4px;font-size:15px;padding:2px 2px 4px}
 .okc{color:var(--ok)}.badc{color:var(--pen)}.halfc{color:var(--warn)}
 .fix.col{flex-direction:column;align-items:flex-start;gap:4px}
@@ -913,7 +915,8 @@ Rules:
   Language mistakes (spelling, grammar, agreement, accents) LOWER the score only slightly: a few isolated mistakes cost nothing or at most half a point; only many mistakes, or mistakes that make the text hard to understand, may cost more — never more than about 20% of the task's points. NEVER subtract one point per mistake. If the key gives explicit criteria, follow them.
   Still list each concrete language mistake in "items" so the teacher sees them; "points" is your suggested score.
 - Whenever a task loses points (partial or wrong), add "items" with each concrete mistake: {"n":"","answer":"the wrong fragment exactly as written","correct":"the corrected fragment"} (max 5, e.g. {"answer":"hablador","correct":"habladora"}). For a single short answer "answer"/"correct" are enough.
-- Points: use "max" from the key; otherwise points printed on the sheet; otherwise 1 per task.
+- Points: use "max" from the key; otherwise points printed on the sheet (e.g. "…/6p"); otherwise 1 per task. Always respect the task's maximum.
+- Tasks made of several items (translations, blanks, matching pairs, true/false rows): each item is worth max ÷ number of items. A correct item earns its full value; a wrong or missing item earns 0; an item with only a small slip (one wrong or missing letter, the right word clearly intended) earns HALF its value${S.spell?" (spelling counts: such an item earns 0)":""}. Add up the items — e.g. 6 items for 6 points, 5 correct and 1 with a typo = 5.5 points.
 - Ignore any score or grade already written by a teacher.
 - Use status: "ok" (full points), "partial", "wrong" (0 points), "check" (you are unsure about reading OR about grading — the teacher must look). For "check" still give your best-guess points. Prefer "check" over a confident wrong verdict.
 - "reason": in Polish, max 8 words, plain and concrete. Required for partial, wrong and check; say exactly what the teacher should look at, e.g. "„b” czy „d”?" or "Brak jednostki.". Empty for ok unless a spelling note.
@@ -986,7 +989,7 @@ async function runJob(job){
       const st=["ok","partial","wrong","check"].includes(t.status)?t.status:"check";
       const b=Array.isArray(t.box)&&t.box.length===4?t.box.map(v=>Math.min(1,Math.max(0,+v||0))):null;
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
-      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),options:cleanOptions(t.options,max),content:String(t.content||"").slice(0,8),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50)})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
+      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),sug:pts,options:cleanOptions(t.options,max),content:String(t.content||"").slice(0,8),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50)})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
     });
     tasks.forEach(applyRules);
     job.res={n:job.n,pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?sink.v:null};
@@ -1159,15 +1162,18 @@ function fixHtml(t){
   }
   return `<div class="fix"><span class="small warnc">${esc(t.question||t.reason||"Sprawdź odpowiedź")}</span></div>`;
 }
-function ptsHtml(t){const v=[0];if(t.max>=1&&t.max%1===0&&t.max<=3)for(let k=1;k<=t.max;k++)v.push(k);else{if(t.max>=1)v.push(Math.round(t.max)/2);v.push(t.max)}
-  if(t.type==="open"&&t.max>=2)v.push(t.max-1,t.max-0.5);
-  if(!t.resolved)v.push(t.points);
-  return [...new Set(v)].sort((x,y)=>x-y).map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}${!t.resolved&&t.points===p?" sug":""}" data-p="${p}">${fmt(p)}</button>`).join("")+`<span class="small muted">pkt</span>`}
+function ptsHtml(t){
+  const sug=t.sug!=null?t.sug:t.points,m=t.max,v=new Set([0,m]);
+  [sug-0.5,sug,sug+0.5].concat(m>3?[sug-1]:[]).forEach(x=>{if(x>=0&&x<=m)v.add(Math.round(x*2)/2)});
+  if(v.size<4&&m>=2)v.add(Math.round(m/2));
+  const list=[...v].sort((x,y)=>x-y);
+  return `<div class="ptrow">${list.map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}${!t.resolved&&p===sug?" sug":""}" data-p="${p}">${fmt(p)}</button>`).join("")}<span class="small muted">/ ${fmt(m)} pkt</span></div>`}
 function lineHtml(t,s){const wrongish=s!=="ok"&&t.correct&&norm(t.correct)!==norm(t.answer);return `<div class="line1"><span class="hand">${esc(t.answer||"—")}</span>${wrongish?`<span class="muted small">→ powinno być</span><b>${esc(t.correct)}</b>`:""}</div>`}
 function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer=o.answer;t.choice=i;t.resolved=true}
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
 const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/[\s.,;:!?()„”"'«»¿¡-]+/g," ").trim();
-function applyRules(t){
+function applyRules(t){applyRules0(t);if(!t.resolved)t.sug=t.points}
+function applyRules0(t){
   if(!S.accents&&t.items&&t.items.length&&t.points<t.max&&t.items.every(x=>x.answer&&x.correct&&strip(x.answer)===strip(x.correct))){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
   if(!S.accents){
     if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
