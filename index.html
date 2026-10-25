@@ -908,6 +908,7 @@ Method (follow strictly, task by task):
 Rules:
 - Read handwriting very carefully: children's handwriting, cursive, print, capitals, left-handed slant, light pencil. Compare ambiguous letters (a/o, u/n, b/d/6, 1/7, e/c, ł/t, rz/ż) against context.
 - Multiple choice: find the circled, ticked, crossed or underlined option. A crossed-out choice that was clearly replaced is not the answer. Two marks with no clear final choice → status "check".
+- Multiple-select tasks ("zaznacz wszystkie poprawne", "select all that apply"): each correct option is worth max ÷ number of correct options. Give that value for every correct option the student marked; a wrongly marked option does NOT cancel the points of correct ones (unless the key says otherwise); never go above max. Exception: if the student marked ALL options (guessing), give 0. Example: correct A and C for 2 points, student marked A and B → 1 point. List the mistakes in "items", e.g. {"answer":"B","correct":"C"}.
 - Matching with lines: follow each drawn line end to end and report pairs. If lines cross or an end point is unclear → "check".
 - Fill-in: read each word. ${S.spell?"Spelling mistakes cost the point for that word.":"Ignore spelling mistakes for scoring but mention them in reason (status stays ok)."}
 - Open/written answers (sentences, opinions, short essays, descriptions) in ANY subject or language: READ and GRADE them yourself. Never ask the teacher to read them. Use status "check" only if a specific word is illegible — never because the answer is long.
