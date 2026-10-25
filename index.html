@@ -206,6 +206,9 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .badu{text-decoration:underline;text-decoration-color:var(--pen);text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-skip-ink:none}
 .badu.gap{color:var(--pen);text-decoration:none;font-family:var(--f-body);font-size:.8em}
 .goodh{color:var(--ok);font-weight:800}
+.task.miss{border-color:var(--line)}
+.dnum.x{border-color:var(--pen);color:var(--pen)}
+.dnum.h{border-color:var(--warn);color:var(--warn)}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -365,7 +368,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     </div>
     <div class="sheet-wrap" id="sheets"></div>
     <div class="section-title"><h3 id="tasksH">Do decyzji</h3><button class="link small" id="showAll"></button></div>
-    <div class="small muted" id="noDoubts" hidden>Brak wątpliwości. Wynik jest gotowy do przepisania na kartkę.</div>
+    <div class="small muted" id="noDoubts" hidden>Wszystko dobrze. Wynik jest gotowy do przepisania na kartkę.</div>
     <div class="tasks" id="tasks"></div>
     <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext">Następna praca</button></div>
   </section>
@@ -904,7 +907,8 @@ Rules:
 - Multiple choice: find the circled, ticked, crossed or underlined option. A crossed-out choice that was clearly replaced is not the answer. Two marks with no clear final choice → status "check".
 - Matching with lines: follow each drawn line end to end and report pairs. If lines cross or an end point is unclear → "check".
 - Fill-in: read each word. ${S.spell?"Spelling mistakes cost the point for that word.":"Ignore spelling mistakes for scoring but mention them in reason (status stays ok)."}
-- Open answers: score by content and the key points; partial credit allowed (half points allowed). Be fair, not pedantic.
+- Open/written answers (sentences, opinions, short essays): READ and GRADE them yourself against the task instructions (e.g. required content, "use at least two adjectives", grammar, gender/number agreement, verb forms, vocabulary). Never ask the teacher to read them. Partial credit allowed (half points allowed). Be fair, not pedantic. Use status "check" only if a specific word is illegible — never because the answer is long.
+- Whenever a task loses points (partial or wrong), add "items" with each concrete mistake: {"n":"","answer":"the wrong fragment exactly as written","correct":"the corrected fragment"} (max 5, e.g. {"answer":"hablador","correct":"habladora"}). For a single short answer "answer"/"correct" are enough.
 - Points: use "max" from the key; otherwise points printed on the sheet; otherwise 1 per task.
 - Ignore any score or grade already written by a teacher.
 - Use status: "ok" (full points), "partial", "wrong" (0 points), "check" (you are unsure about reading OR about grading — the teacher must look). For "check" still give your best-guess points. Prefer "check" over a confident wrong verdict.
@@ -1076,7 +1080,7 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
     const t=o.t,vc=Math.min(1,Math.max(0,+v.confidence||0)),vp=Math.min(t.max,Math.max(0,+v.points||0));
     const vs=["ok","partial","wrong","check"].includes(v.status)?v.status:"check";
     const same=norm(v.answer)===norm(t.answer);
-    if(same||vc>=0.9||(t.items&&t.items.length)||(!t.answer&&!v.answer)){
+    if(same||vc>=0.9||(t.items&&t.items.length)||(!t.answer&&!v.answer)||t.type==="open"||String(t.answer).length>40||String(v.answer||"").length>40){
       t.answer=String(v.answer??t.answer);t.points=vp;t.conf=vc;
       t.status=vc<0.85?"check":vs;t.reason=String(v.reason||"");
       if(t.status==="check"){if(v.doubt)t.doubt=String(v.doubt);if(v.question)t.question=String(v.question).slice(0,90);const op=cleanOptions(v.options,t.max);if(op)t.options=op}else{t.options=null;t.question=""}
@@ -1128,6 +1132,11 @@ function diffPairs(a,c){
   const out=[],n=Math.max(ua.length,uc.length);for(let k=0;k<n;k++)out.push([ua[k]||"",uc[k]||""]);
   return out;
 }
+function hasFix(t){
+  const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
+  if(t.items&&t.items.some(x=>!eqI(x.answer,x.correct)))return true;
+  return !!(t.correct&&String(t.answer).length<=40&&String(t.correct).length<=40&&!eqI(t.correct,t.answer));
+}
 function fixHtml(t){
   if(t.items&&t.items.length){
     const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
@@ -1159,11 +1168,7 @@ function applyRules(t){
     if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>o.answer)&&new Set(t.options.map(o=>norm(o.answer))).size>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
   }
   const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
-  const concrete=(t.items&&t.items.some(x=>!eqI(x.answer,x.correct)))||(t.correct&&!eqI(t.correct,t.answer));
-  if(t.status==="check"&&!concrete){
-    if(t.points>=t.max){t.status="ok";t.options=null;t.question="";return}
-    if(!t.reason||/co napisał uczeń/i.test(t.question||"")){t.question="";t.reason=t.reason||"Sprawdź odpowiedź"}
-  }
+  if(t.status==="check"&&!hasFix(t)){t.status=t.points>=t.max?"ok":t.points>0?"partial":"wrong";t.options=null;t.question="";return}
   if(t.status==="check"&&!t.options){
     t.options=t.max>=1?[{label:"Dobrze",answer:"",points:t.max},{label:"Połowa",answer:"",points:Math.round(t.max)/2},{label:"Źle",answer:"",points:0}]:[{label:"Dobrze",answer:"",points:t.max},{label:"Źle",answer:"",points:0}];
     if(t.max<2)t.options=t.options.filter(o=>o.label!=="Połowa");
@@ -1212,21 +1217,21 @@ function renderResult(){
   const box=$("#tasks");box.innerHTML="";
   const order=orderIdx(sc.tasks);
   const nCheck=order.filter(i=>stat(sc.tasks[i])==="check").length;
-  $("#tasksH").textContent=S.showAll?"Wszystkie zadania":"Do decyzji"+(nCheck?` (${nCheck})`:"");
+  $("#tasksH").textContent=S.showAll?"Wszystkie zadania":nCheck?`Do decyzji (${nCheck})`:"Błędy";
   $("#showAll").textContent=S.showAll?"Pokaż tylko sporne":`Pokaż wszystkie (${order.length})`;
-  $("#noDoubts").hidden=S.showAll||nCheck>0;
+  $("#noDoubts").hidden=S.showAll||order.some(i=>stat(sc.tasks[i])!=="ok");
   if(!S.showAll){
-    const grp=k=>order.filter(i=>stat(sc.tasks[i])===k).map(i=>esc(sc.tasks[i].nr));
+    const grp=k=>order.filter(i=>stat(sc.tasks[i])===k&&!(k!=="ok"&&hasFix(sc.tasks[i]))).map(i=>esc(sc.tasks[i].nr));
     const ok=grp("ok"),bad=grp("wrong"),half=grp("partial");
     const sm=document.createElement("div");sm.className="sum";
     sm.innerHTML=(ok.length?`<div><b class="okc">✓ Dobrze:</b> ${ok.join(", ")}</div>`:"")+(bad.length?`<div><b class="badc">✗ Źle:</b> ${bad.join(", ")}</div>`:"")+(half.length?`<div><b class="halfc">½ Częściowo:</b> ${half.join(", ")}</div>`:"");
     if(sm.innerHTML)box.appendChild(sm);
   }
-  order.filter(i=>S.showAll||stat(sc.tasks[i])==="check").forEach(i=>{
+  order.filter(i=>{const st=stat(sc.tasks[i]);return S.showAll||st==="check"||((st==="wrong"||st==="partial")&&hasFix(sc.tasks[i]))}).forEach(i=>{
     const t=sc.tasks[i],s=stat(t);
-    if(s==="check"&&!S.showAll){
-      const d=document.createElement("div");d.className="task chk dense";d.id="task-"+i;
-      d.innerHTML=`<div class="drow"><span class="dnum">${nums[i]}</span><span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div><div class="pts">${ptsHtml(t)}</div>`;
+    if(s!=="ok"&&!S.showAll){
+      const d=document.createElement("div");d.className="task dense"+(s==="check"?" chk":" miss");d.id="task-"+i;
+      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":"h"}">${s==="wrong"?"✗":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div><div class="pts">${ptsHtml(t)}</div>`;
       d.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{t.points=+b.dataset.p;t.resolved=true;renderResult()});
       box.appendChild(d);return;
     }
