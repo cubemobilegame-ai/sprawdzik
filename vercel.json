@@ -1,0 +1,15 @@
+{
+  "regions": ["fra1"],
+  "functions": {
+    "api/ai.js": { "maxDuration": 120 }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sprawdzik</title>
+<meta name="description" content="Sprawdzanie kartkówek i sprawdzianów aparatem telefonu.">
+<meta name="theme-color" content="#2846D2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sprawdzik">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" type="image/png" href="/icon-512.png">
+<link rel="manifest" href="/manifest.json">
+<style>html{box-sizing:border-box}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap">
+<style>
+/* Layout: one-screen phone app; views swap inside a full-height shell, bottom action bar, red-pen marks drawn over the scanned page */
+:root{
+  --paper:#F4F6FA; --surface:#FFFFFF; --ink:#15213A; --muted:#5A6680; --line:#DDE3EE;
+  --blue:#2846D2; --blue-ink:#FFFFFF; --pen:#D3263C; --ok:#1E8757; --warn:#B86E00;
+  --okbg:#E6F4EC; --warnbg:#FFF2DC; --penbg:#FCE8EA; --shade:rgba(21,33,58,.55);
+  --f-display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --f-pen:"Caveat","Comic Sans MS",cursive;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0D1321; --surface:#161F33; --ink:#E9EDF6; --muted:#98A3BB; --line:#26324C;
+  --blue:#7D93FF; --blue-ink:#0D1321; --pen:#FF6275; --ok:#43CC8E; --warn:#F3AA3C;
+  --okbg:#14322A; --warnbg:#3A2C12; --penbg:#3A1820; --shade:rgba(0,0,0,.65); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0D1321; --surface:#161F33; --ink:#E9EDF6; --muted:#98A3BB; --line:#26324C;
+  --blue:#7D93FF; --blue-ink:#0D1321; --pen:#FF6275; --ok:#43CC8E; --warn:#F3AA3C;
+  --okbg:#14322A; --warnbg:#3A2C12; --penbg:#3A1820; --shade:rgba(0,0,0,.65); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;position:relative}
+.view{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:16px;padding-block:14px calc(130px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:24px}
+.mark{width:34px;height:34px;border-radius:9px;background:var(--blue);display:grid;place-items:center;color:var(--blue-ink);font-family:var(--f-pen);font-size:26px;line-height:1}
+.badge{font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 9px;border-radius:99px;border:1.5px solid var(--line);color:var(--muted)}
+.badge.pro{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+.icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--muted)}
+.icon-btn:hover{background:var(--surface)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 18px;border-radius:14px;font-weight:600;border:1.5px solid var(--line);background:var(--surface)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--pen)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.scan-hero{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:22px;background:var(--blue);color:var(--blue-ink)}
+.scan-hero h2{font-size:26px;line-height:1.1}
+.scan-hero p{margin:0;opacity:.85}
+.scan-hero .btn{background:var(--blue-ink);color:var(--blue);border-color:transparent;min-height:58px;font-size:17px}
+.meter{height:6px;border-radius:9px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--blue);border-radius:9px}
+.key-state{display:flex;gap:12px;align-items:flex-start}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:var(--line)}
+.dot.on{background:var(--ok)}
+.privacy{display:flex;gap:12px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.privacy svg{flex:none;color:var(--ok);margin-top:2px}
+.link{color:var(--blue);font-weight:600;padding:0}
+.banner{padding:12px 14px;border-radius:14px;background:var(--warnbg);color:var(--ink);font-size:13px}
+
+/* capture preview */
+.thumbs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.thumb{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface);aspect-ratio:3/4;max-width:100%}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .n{position:absolute;left:8px;top:8px;background:var(--shade);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px}
+.thumb .x{position:absolute;right:6px;top:6px;width:32px;height:32px;border-radius:50%;background:var(--shade);color:#fff;display:grid;place-items:center}
+.addpage{aspect-ratio:3/4;border:2px dashed var(--line);border-radius:14px;display:grid;place-items:center;color:var(--muted);font-weight:600;text-align:center;padding:10px}
+
+/* working */
+.work-stage{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--surface);max-width:100%}
+.work-stage img{display:block;width:100%;filter:saturate(.6)}
+.beam{position:absolute;left:0;right:0;height:70px;top:-70px;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--blue) 35%,transparent));border-bottom:2px solid var(--blue);animation:beam 1.8s ease-in-out infinite}
+@keyframes beam{to{top:100%}}
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;gap:10px;align-items:center;color:var(--muted)}
+.step.done{color:var(--ink)}
+.step.now{color:var(--ink);font-weight:600}
+.step i{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none}
+.step.done i{background:var(--ok);border-color:var(--ok)}
+.step.now i{border-color:var(--blue);border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* result */
+.score{display:flex;align-items:center;gap:16px}
+.grade-ring{width:76px;height:76px;border-radius:50%;border:3px solid var(--pen);display:grid;place-items:center;font-family:var(--f-pen);color:var(--pen);font-size:44px;line-height:1;flex:none;transform:rotate(-6deg)}
+.score .pts{font-family:var(--f-display);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;display:inline-flex;gap:6px;align-items:center}
+.chip.ok{background:var(--okbg);color:var(--ok)}
+.chip.bad{background:var(--penbg);color:var(--pen)}
+.chip.chk{background:var(--warnbg);color:var(--warn)}
+.sheet-wrap{display:flex;flex-direction:column;gap:12px}
+.sheet{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff;max-width:100%}
+.sheet img{display:block;width:100%}
+.pm{position:absolute;transform:translate(-4px,-50%);font-family:var(--f-pen);font-weight:700;font-size:clamp(18px,5.4vw,28px);line-height:1;white-space:nowrap;padding:0 2px;color:#D3263C;text-shadow:0 0 3px #fff,0 0 3px #fff}
+.pm.ok{color:#1E8757}
+.pm.chk{color:#B86E00;border:2px solid #B86E00;border-radius:50%;padding:2px 8px;background:rgba(255,242,220,.85);text-shadow:none}
+.box{position:absolute;border:2px solid #B86E00;border-radius:6px;background:rgba(243,170,60,.12);pointer-events:none}
+.stamp{position:absolute;right:3%;top:2%;font-family:var(--f-pen);color:#D3263C;font-size:clamp(24px,7vw,40px);line-height:.95;text-align:right;transform:rotate(-5deg);text-shadow:0 0 4px #fff,0 0 4px #fff}
+.tasks{display:flex;flex-direction:column;gap:10px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;scroll-margin-top:16px}
+.task.chk{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn)}
+.task.flash{animation:flash 1.2s}
+@keyframes flash{0%,40%{background:var(--warnbg)}}
+.task-head{display:flex;align-items:center;gap:10px}
+.task-nr{font-family:var(--f-display);font-weight:700;font-size:17px;min-width:34px}
+.ans{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;font-size:14px}
+.ans dt{color:var(--muted)}
+.ans dd{margin:0;overflow-wrap:anywhere}
+.hand{font-family:var(--f-pen);font-size:21px;line-height:1.1;color:var(--blue)}
+.reason{font-size:13px;color:var(--warn);font-weight:600}
+.stepper{display:flex;align-items:center;gap:4px;margin-left:auto}
+.stepper button{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--line);font-size:18px;font-weight:700;background:var(--surface)}
+.stepper output{min-width:54px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.resolve{align-self:flex-start;font-size:13px;font-weight:700;color:var(--warn);padding:6px 0}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.section-title h3{font-size:17px}
+
+/* action bar */
+.bar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:linear-gradient(180deg,transparent,var(--paper) 30%)}
+.bar .btn{flex:1}
+
+/* sheets */
+.overlay{position:absolute;inset:0;background:var(--shade);display:flex;align-items:flex-end;z-index:20}
+.modal{width:100%;max-height:92%;overflow-y:auto;background:var(--paper);border-radius:24px 24px 0 0;display:flex;flex-direction:column;gap:14px;padding-block:20px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.plan{border:2px solid var(--line);border-radius:16px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;background:var(--surface)}
+.plan.sel{border-color:var(--blue)}
+.plan b{font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.save{font-size:11px;font-weight:700;color:var(--ok)}
+.feat{display:flex;flex-direction:column;gap:6px;font-size:14px;padding:0;margin:0;list-style:none}
+.feat li{display:flex;gap:8px}
+.feat li::before{content:"✓";color:var(--ok);font-weight:700}
+.scale{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:8px;align-items:center}
+.scale input,.field{width:100%;min-height:40px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;padding:0 10px;font-variant-numeric:tabular-nums}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.switch input{width:46px;height:28px;accent-color:var(--blue)}
+.toast{position:absolute;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:30;max-width:88%;text-align:center}
+
+/* tab bar */
+.tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
+.tab svg{width:23px;height:23px}
+.tab[aria-current="page"]{color:var(--blue)}
+.view.tabbed{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+.view>*{flex-shrink:0}
+.rotate{position:fixed;inset:0;z-index:60;background:var(--paper);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+.rotate svg{color:var(--blue)}
+@media (orientation:landscape) and (max-height:520px){.rotate{display:flex}}
+/* lists */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:18px;display:flex;flex-direction:column;overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;padding:14px 16px;text-align:left;width:100%;min-height:54px}
+.li+.li{border-top:1px solid var(--line)}
+.li .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--paper);color:var(--blue);flex:none}
+.li .chev{color:var(--muted);margin-left:auto}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:14px;background:var(--paper);border:1px solid var(--line)}
+.seg button{min-height:40px;border-radius:10px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(21,33,58,.12)}
+.copyrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.copyrow code{font:600 14px var(--f-body);user-select:all;padding:8px 10px;border-radius:10px;background:var(--paper);border:1px solid var(--line)}
+.doc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;font-size:14px;line-height:1.6}
+.doc h3{font-size:16px;margin:18px 0 6px}
+.doc h3:first-child{margin-top:0}
+.doc p,.doc ul{margin:0 0 8px;max-width:65ch}
+.doc ul{padding-left:20px}
+.fill{background:var(--warnbg);padding:0 4px;border-radius:4px}
+.plan-now{display:flex;align-items:center;gap:14px}
+.plan-now .big{font-family:var(--f-display);font-size:28px;font-weight:700;line-height:1}
+/* onboarding */
+.onb{position:fixed;inset:0;z-index:40;background:var(--paper);display:flex;flex-direction:column;padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.onb-in{flex:1;display:flex;flex-direction:column;max-width:460px;width:100%;margin:0 auto;gap:18px;min-height:0}
+.onb-top{display:flex;justify-content:space-between;align-items:center;min-height:40px}
+.onb-art{flex:1;min-height:0;display:grid;place-items:center}
+.onb-art svg{width:min(78%,300px);height:auto;max-height:100%}
+.onb-slide{display:flex;flex-direction:column;gap:10px}
+.onb-slide h2{font-size:clamp(26px,7vw,32px);line-height:1.1}
+.onb-slide p{margin:0;color:var(--muted);font-size:16px;max-width:36ch}
+.dots{display:flex;gap:6px}
+.dots i{width:7px;height:7px;border-radius:9px;background:var(--line);transition:width .3s,background .3s}
+.dots i.on{width:22px;background:var(--blue)}
+.onb-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.onb-foot .btn{min-width:150px}
+.fadein{animation:fade .45s ease both}
+
+/* intro */
+.intro{position:fixed;inset:0;z-index:50;background:#0B1020;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#fff;transition:opacity .4s}
+.cube{width:64px;height:64px;position:relative;transform-style:preserve-3d;animation:cube 1.6s cubic-bezier(.6,.1,.3,1) forwards}
+.cube span{position:absolute;inset:0;border:2px solid #7D93FF;background:rgba(125,147,255,.12)}
+.cube span:nth-child(1){transform:translateZ(32px)}
+.cube span:nth-child(2){transform:rotateY(90deg) translateZ(32px)}
+.cube span:nth-child(3){transform:rotateX(90deg) translateZ(32px)}
+.cube span:nth-child(4){transform:rotateY(180deg) translateZ(32px)}
+.cube span:nth-child(5){transform:rotateY(-90deg) translateZ(32px)}
+.cube span:nth-child(6){transform:rotateX(-90deg) translateZ(32px)}
+@keyframes cube{from{transform:rotateX(-30deg) rotateY(0)}to{transform:rotateX(-30deg) rotateY(405deg)}}
+.intro p{margin:0;font-family:var(--f-display);font-weight:700;letter-spacing:.32em;font-size:14px;opacity:0;animation:fade .6s .7s forwards}
+@keyframes fade{to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.cube,.beam,.step.now i{animation:none}.intro p{opacity:1;animation:none}}
+</style>
+
+<div class="intro" id="intro" aria-hidden="true"><div class="cube"><span></span><span></span><span></span><span></span><span></span><span></span></div><p>CUBE MOBILE APPS</p></div>
+
+<div class="rotate" aria-live="polite"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><b style="font-family:var(--f-display);font-size:20px">Obróć telefon pionowo</b><span class="muted">Sprawdzik działa tylko w pionie.</span></div>
+<div class="onb" id="onb" hidden role="dialog" aria-label="Wprowadzenie">
+  <div class="onb-in">
+    <div class="onb-top"><div class="brand"><div class="mark">✓</div><b style="font-family:var(--f-display);font-size:18px">Sprawdzik</b></div><button class="link" id="onbSkip">Pomiń</button></div>
+    <div class="onb-art" id="onbArt"></div>
+    <div class="onb-slide" id="onbText"></div>
+    <div class="onb-foot"><div class="dots" id="onbDots"><i></i><i></i><i></i></div><button class="btn primary" id="onbNext">Dalej</button></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+
+  <!-- HOME -->
+  <section class="view tabbed" id="v-home">
+    <div class="top">
+      <div class="brand"><div class="mark">✓</div><h1>Sprawdzik</h1><span class="badge" id="planBadge">FREE</span></div>
+      <button class="icon-btn" id="openSettings" aria-label="Ustawienia"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+
+    <div class="banner" id="noAi" hidden>Odczyt pisma działa, gdy otworzysz tę stronę w aplikacji Claude. Poniżej możesz obejrzeć przykład sprawdzonej kartkówki.</div>
+
+    <div class="scan-hero">
+      <h2>Skanuj pracę ucznia</h2>
+      <p>Zrób zdjęcie kartkówki lub sprawdzianu. Aplikacja odczyta odpowiedzi, policzy punkty i wystawi ocenę.</p>
+      <button class="btn" id="scanBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Otwórz aparat</button>
+    </div>
+
+    <div class="panel">
+      <div class="key-state">
+        <span class="dot" id="keyDot"></span>
+        <div class="grow">
+          <div style="font-weight:600" id="keyTitle">Bez wzoru odpowiedzi</div>
+          <div class="small muted" id="keyDesc">Aplikacja sama oceni poprawność. Dla największej pewności zeskanuj najpierw swój wzór (klucz) z poprawnymi odpowiedziami.</div>
+        </div>
+      </div>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="btn grow" id="keyBtn">Zeskanuj wzór</button>
+        <button class="btn ghost danger" id="keyClear" hidden>Usuń wzór</button>
+      </div>
+    </div>
+
+    <div class="panel" id="lastPanel" hidden>
+      <div class="row">
+        <div class="grow"><div class="label">Ostatni skan</div><div style="font-weight:600" id="lastInfo"></div></div>
+        <button class="btn" id="lastOpen">Pokaż</button>
+      </div>
+    </div>
+
+    <div class="panel" id="quotaPanel">
+      <div class="row"><div class="grow small"><b id="quotaText"></b></div><button class="link small" id="openPay">Przejdź na Pro</button></div>
+      <div class="meter"><i id="quotaBar"></i></div>
+    </div>
+
+    <div class="privacy">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <div>Zdjęcia nie trafiają do galerii ani do pamięci telefonu. Ostatni skan jest trzymany tylko chwilowo w pamięci aplikacji i znika po kolejnym skanie, po zamknięciu aplikacji albo po 10 minutach w tle. <button class="link" id="wipeNow">Usuń teraz</button></div>
+    </div>
+
+    <button class="link small" id="demoBtn" style="align-self:center">Zobacz przykład sprawdzonej kartkówki</button>
+  </section>
+
+  <!-- CAPTURE -->
+  <section class="view" id="v-capture" hidden>
+    <div class="top"><h2 id="capTitle" style="font-size:22px">Praca ucznia</h2><button class="icon-btn" id="capCancel" aria-label="Anuluj">✕</button></div>
+    <p class="muted small" style="margin:0" id="capHint">Sprawdzian ma kilka stron? Dodaj je wszystkie, zanim zaczniesz sprawdzanie.</p>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="bar"><button class="btn primary" id="capGo">Sprawdź</button></div>
+  </section>
+
+  <!-- WORKING -->
+  <section class="view" id="v-work" hidden>
+    <h2 style="font-size:22px" id="workTitle">Sprawdzam pracę…</h2>
+    <div class="work-stage"><img id="workImg" alt="Skanowana strona"><div class="beam"></div></div>
+    <div class="steps" id="steps"></div>
+    <div class="bar"><button class="btn" id="workStop">Przerwij</button></div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="view" id="v-result" hidden>
+    <div class="top"><button class="icon-btn" id="resHome" aria-label="Wróć">←</button><span class="label" id="resLabel">Wynik</span><span style="width:40px"></span></div>
+    <div class="panel">
+      <div class="score">
+        <div class="grade-ring" id="gradeRing">4</div>
+        <div class="grow">
+          <div class="pts" id="ptsText">0 / 0 pkt</div>
+          <div class="muted" id="pctText"></div>
+        </div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="banner" id="qualityNote" hidden></div>
+      <div class="small muted" id="costLine" hidden></div>
+    </div>
+    <div class="sheet-wrap" id="sheets"></div>
+    <div class="section-title"><h3>Zadania</h3><span class="small muted">Stuknij − / + aby poprawić punkty</span></div>
+    <div class="tasks" id="tasks"></div>
+    <div class="bar"><button class="btn" id="resDone">Gotowe</button><button class="btn primary" id="resNext">Następna praca</button></div>
+  </section>
+
+  <!-- KEY RESULT -->
+  <section class="view" id="v-key" hidden>
+    <div class="top"><h2 style="font-size:22px">Wzór odpowiedzi</h2><span></span></div>
+    <p class="muted small" style="margin:0">Sprawdź, czy wszystko odczytane dobrze. Możesz poprawić odpowiedź i liczbę punktów.</p>
+    <div class="tasks" id="keyTasks"></div>
+    <div class="bar"><button class="btn" id="keyRetake">Zeskanuj ponownie</button><button class="btn primary" id="keySave">Zapisz wzór</button></div>
+  </section>
+
+  <!-- PLAN -->
+  <section class="view tabbed" id="v-plan" hidden>
+    <div class="top"><h1 style="font-size:24px">Plan i płatności</h1><span></span></div>
+    <div class="panel">
+      <div class="plan-now">
+        <div class="grow"><div class="label">Twój plan</div><div class="big" id="pnName">Free</div></div>
+        <span class="badge" id="pnBadge">FREE</span>
+      </div>
+      <div id="pnFree">
+        <div class="small" style="margin-bottom:8px"><b id="pnQuota"></b></div>
+        <div class="meter"><i id="pnBar"></i></div>
+      </div>
+      <div class="small muted" id="pnProInfo" hidden></div>
+    </div>
+    <div id="pnBuy" style="display:flex;flex-direction:column;gap:14px">
+      <ul class="feat"><li>Nielimitowane skanowanie prac</li><li>Wzory odpowiedzi do każdego sprawdzianu</li><li>Tryb dokładny dla trudnego pisma</li><li>7 dni za darmo, potem wybrany plan</li></ul>
+      <div class="plans">
+        <button class="plan" data-plan="m"><span class="small muted">Miesięcznie</span><b>9,99 zł</b><span class="small muted">co miesiąc</span></button>
+        <button class="plan sel" data-plan="y"><span class="small muted">Rocznie</span><b>79 zł</b><span class="save">6,58 zł / mies. · oszczędzasz 34%</span></button>
+      </div>
+      <button class="btn primary" id="pnBuyBtn">Wypróbuj 7 dni za darmo</button>
+      <p class="small muted" style="margin:0">Płatność obsługuje Google Play. Po okresie próbnym subskrypcja odnawia się automatycznie. Możesz ją anulować w każdej chwili, najpóźniej 24 godziny przed odnowieniem. Ceny zawierają VAT.</p>
+    </div>
+    <div class="list">
+      <button class="li" id="restoreBtn"><span class="ic">↻</span><span class="grow">Przywróć zakupy</span></button>
+      <a class="li" style="color:inherit;text-decoration:none" href="https://play.google.com/store/account/subscriptions" target="_blank" rel="noopener"><span class="ic">⚙</span><span class="grow">Zarządzaj subskrypcją w Google Play</span><span class="chev">↗</span></a>
+    </div>
+    <p class="small muted" style="margin:0" id="demoNote">To podgląd: zakup włącza Pro tylko na tym urządzeniu, bez płatności.</p>
+    <button class="btn ghost" id="pnCancelDemo" hidden>Wróć do planu Free (podgląd)</button>
+  </section>
+
+  <!-- MORE -->
+  <section class="view tabbed" id="v-more" hidden>
+    <div class="top"><h1 style="font-size:24px">Więcej</h1><span></span></div>
+    <div class="panel">
+      <div class="label">Wygląd</div>
+      <div class="seg" role="group" aria-label="Motyw">
+        <button data-theme-set="system">Systemowy</button><button data-theme-set="light">Jasny</button><button data-theme-set="dark">Ciemny</button>
+      </div>
+    </div>
+    <div class="list">
+      <button class="li" data-doc="privacy"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="grow">Polityka prywatności</span><span class="chev">›</span></button>
+      <button class="li" data-doc="terms"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span><span class="grow">Regulamin</span><span class="chev">›</span></button>
+      <button class="li" data-doc="howto"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg></span><span class="grow">Jak robić dobre zdjęcia</span><span class="chev">›</span></button>
+      <button class="li" id="changeCode" hidden><span class="ic">#</span><span class="grow">Kod dostępu do serwera</span><span class="chev">›</span></button>
+      <button class="li" id="replayOnb"><span class="ic">▶</span><span class="grow">Pokaż wprowadzenie</span><span class="chev">›</span></button>
+    </div>
+    <div class="panel">
+      <div class="label">Kontakt</div>
+      <div class="small muted">Pytania, błędy, pomysły na nowe funkcje:</div>
+      <div class="copyrow"><code id="mail">cubemobilegame@gmail.com</code><button class="btn" style="min-height:40px" id="copyMail">Kopiuj</button></div>
+    </div>
+    <div class="list">
+      <button class="li" id="wipeAll"><span class="ic" style="color:var(--pen)">✕</span><span class="grow" style="color:var(--pen)">Usuń wszystkie dane z urządzenia</span></button>
+    </div>
+    <div class="panel" id="wipeConfirm" hidden>
+      <div class="small">Usunąć wzór odpowiedzi, skalę ocen i ustawienia? Licznik skanów i plan zostają.</div>
+      <div class="row"><button class="btn grow" id="wipeNo">Anuluj</button><button class="btn grow danger" id="wipeYes">Usuń</button></div>
+    </div>
+    <p class="small muted" style="margin:0;text-align:center">Sprawdzik 1.0.0 · Cube Mobile Apps</p>
+  </section>
+
+  <!-- DOCUMENT -->
+  <section class="view" id="v-doc" hidden>
+    <div class="top"><button class="icon-btn" id="docBack" aria-label="Wróć">←</button><span class="label" id="docLabel"></span><span style="width:40px"></span></div>
+    <h1 style="font-size:24px" id="docTitle"></h1>
+    <div class="doc" id="docBody"></div>
+  </section>
+
+  <nav class="tabbar" id="tabbar" aria-label="Nawigacja">
+    <button class="tab" data-tab="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 12l3 3 5-6"/></svg>Sprawdzaj</button>
+    <button class="tab" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Plan</button>
+    <button class="tab" data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Więcej</button>
+  </nav>
+
+  <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+
+  <div class="overlay" id="paySheet" hidden>
+    <div class="modal" role="dialog" aria-labelledby="payH">
+      <h2 id="payH" style="font-size:24px">Sprawdzik Pro</h2>
+      <p class="muted" style="margin:0" id="payLead">Wykorzystałeś 30 darmowych skanów. Przejdź na Pro i sprawdzaj bez limitu.</p>
+      <ul class="feat"><li>Nielimitowane skanowanie prac</li><li>Wzory odpowiedzi do każdego sprawdzianu</li><li>Tryb dokładny dla trudnego pisma</li></ul>
+      <div class="plans">
+        <button class="plan" data-plan="m"><span class="small muted">Miesięcznie</span><b>9,99 zł</b><span class="small muted">co miesiąc</span></button>
+        <button class="plan sel" data-plan="y"><span class="small muted">Rocznie</span><b>79 zł</b><span class="save">6,58 zł / mies. · oszczędzasz 34%</span></button>
+      </div>
+      <button class="btn primary" id="buyBtn">Wypróbuj 7 dni za darmo</button>
+      <p class="small muted" style="margin:0">Płatność obsługuje Google Play. Subskrypcję anulujesz w każdej chwili. W tym podglądzie przycisk tylko włącza Pro, bez płatności.</p>
+      <button class="btn ghost" id="payClose">Nie teraz</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="setSheet" hidden>
+    <div class="modal" role="dialog" aria-labelledby="setH">
+      <h2 id="setH" style="font-size:22px">Ustawienia</h2>
+      <div class="panel">
+        <div class="label">Skala ocen (od ilu % ocena)</div>
+        <div id="scaleRows" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div class="panel">
+        <label class="switch"><span><b>Tryb dokładny (zalecany)</b><br><span class="small muted">Zadania, które nadal budzą wątpliwość, sprawdza dodatkowo mocniejszy model. Trwa trochę dłużej.</span></span><input type="checkbox" id="precise"></label>
+        <label class="switch"><span><b>Ortografia się liczy</b><br><span class="small muted">Błąd w uzupełnianym słowie odejmuje punkt</span></span><input type="checkbox" id="spell"></label>
+      </div>
+      <div class="panel">
+        <div><b>Model odczytu</b><br><span class="small muted">Porównaj na tych samych pracach dokładność i koszt skanu.</span></div>
+        <div class="seg" style="grid-template-columns:1fr 1fr" role="group" aria-label="Model odczytu">
+          <button data-first="default">Ekonomiczny</button><button data-first="complex">Najdokładniejszy</button>
+        </div>
+      </div>
+      <button class="btn" id="resetScale">Przywróć domyślną skalę</button>
+      <button class="btn primary" id="setClose">Gotowe</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="codeSheet" hidden>
+    <div class="modal" role="dialog" aria-labelledby="codeH">
+      <h2 id="codeH" style="font-size:22px">Kod dostępu</h2>
+      <p class="muted" style="margin:0">Wpisz kod ustawiony na serwerze (APP_CODE w Vercel). Chroni Twój klucz API przed użyciem przez obce osoby.</p>
+      <input class="field" id="codeInput" type="password" autocomplete="off" aria-label="Kod dostępu">
+      <div class="reason" id="codeWrong" hidden>Kod jest niepoprawny. Spróbuj ponownie.</div>
+      <button class="btn primary" id="codeSave">Zapisz</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const FREE=30;
+const DEFAULT_SCALE=[{g:"6",n:"celujący",min:96},{g:"5",n:"bardzo dobry",min:86},{g:"4",n:"dobry",min:71},{g:"3",n:"dostateczny",min:51},{g:"2",n:"dopuszczający",min:31},{g:"1",n:"niedostateczny",min:0}];
+const ls={get(k,d){try{const v=localStorage.getItem("spr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("spr_"+k,JSON.stringify(v))}catch(e){}}};
+const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),first:ls.get("first","complex"),spell:ls.get("spell",false),
+  mode:"student",pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
+
+/* ---------- intro ---------- */
+const intro=$("#intro");
+const endIntro=()=>{intro.style.opacity=0;setTimeout(()=>intro.remove(),400)};
+intro.addEventListener("click",endIntro);
+setTimeout(endIntro,matchMedia("(prefers-reduced-motion: reduce)").matches?600:1900);
+
+/* ---------- AI: Claude app (window.claude) or own server (/api/ai) ---------- */
+S.cost=0;
+function getCode(){return ls.get("code","")}
+function blobToB64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(b)})}
+function parseJSON(t){
+  try{return JSON.parse(t)}catch(e){}
+  const f=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(f){try{return JSON.parse(f[1])}catch(e){}}
+  const a=t.search(/[\[{]/),b=Math.max(t.lastIndexOf("}"),t.lastIndexOf("]"));
+  if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1))}catch(e){}}
+  throw{code:"invalid_json",text:t};
+}
+const serverAI={
+  async json(prompt,opt={}){
+    let imgs;
+    try{imgs=await Promise.all([...(opt.images||[])].map(blobToB64))}catch(e){throw{code:"image_rejected"}}
+    let res;
+    try{
+      res=await fetch("/api/ai",{method:"POST",signal:opt.signal,headers:{"content-type":"application/json","x-app-code":getCode()},body:JSON.stringify({prompt,images:imgs,tier:opt.modelTier||"default"})});
+    }catch(e){throw{code:e&&e.name==="AbortError"?"cancelled":"upstream_error"}}
+    if(res.status===401){askCode(true);throw{code:"bad_code"}}
+    if(res.status===429)throw{code:"rate_limited"};
+    if(res.status===413)throw{code:"image_rejected"};
+    if(!res.ok)throw{code:res.status===500?"no_key":"upstream_error"};
+    const d=await res.json();
+    S.cost+=+d.costPLN||0;
+    return parseJSON(d.text||"");
+  },
+  async limits(){return{images:{maxCount:4}}}
+};
+function askCode(wrong){$("#codeWrong").hidden=!wrong;$("#codeInput").value=getCode();$("#codeSheet").hidden=false;setTimeout(()=>$("#codeInput").focus(),50)}
+$("#codeSave").onclick=()=>{ls.set("code",$("#codeInput").value.trim());$("#codeSheet").hidden=true;toast("Kod zapisany")};
+$("#changeCode").onclick=()=>askCode(false);
+(async()=>{
+  let s=null;
+  try{if(window.claude){const c=await window.claude.use("sample");const lim=c&&await c.limits().catch(()=>null);if(lim&&lim.images){s=c;S.maxImg=Math.max(1,lim.images.maxCount||5)}}}catch(e){}
+  if(!s&&location.protocol.startsWith("http")){s=serverAI;S.maxImg=4;S.server=true;$("#changeCode").hidden=false;if(!getCode())setTimeout(()=>askCode(false),2600)}
+  if(s)S.sample=s;else $("#noAi").hidden=false;
+})();
+
+/* ---------- views ---------- */
+const views=["home","capture","work","result","key","plan","more","doc"];
+const TABS=["home","plan","more"];
+function show(v){
+  views.forEach(n=>$("#v-"+n).hidden=n!==v);$("#v-"+v).scrollTop=0;
+  $("#tabbar").hidden=!TABS.includes(v);
+  document.querySelectorAll(".tab").forEach(t=>t.toggleAttribute("aria-current",t.dataset.tab===v));
+  if(TABS.includes(v))document.querySelectorAll(".tab").forEach(t=>t.dataset.tab===v&&t.setAttribute("aria-current","page"));
+  if(v==="plan")renderPlan();
+  if(v==="more")renderMore();
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{if(t.dataset.tab==="home")renderHome();show(t.dataset.tab)});
+
+/* ---------- theme ---------- */
+function applyTheme(){const t=ls.get("theme","system");if(t==="system")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",t)}
+applyTheme();
+document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{ls.set("theme",b.dataset.themeSet);applyTheme();renderMore()});
+function renderMore(){const t=ls.get("theme","system");document.querySelectorAll("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.themeSet===t))}
+
+/* ---------- onboarding ---------- */
+const ART={
+ scan:`<svg viewBox="0 0 240 240" fill="none"><rect x="58" y="34" width="124" height="166" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><g stroke="var(--line)" stroke-width="2"><path d="M76 66h70M76 88h88M76 110h80M76 132h88M76 154h60M76 176h74"/></g><path d="M86 86l-3 4" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/><g stroke="var(--blue)" stroke-width="5" stroke-linecap="round"><path d="M40 52V30h22M200 52V30h-22M40 190v22h22M200 190v22h-22"/></g><rect x="40" y="118" width="160" height="3" rx="1.5" fill="var(--blue)" opacity=".7"/></svg>`,
+ grade:`<svg viewBox="0 0 240 240" fill="none"><rect x="50" y="30" width="140" height="180" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><g stroke="var(--line)" stroke-width="2"><path d="M68 70h80M68 104h80M68 138h80M68 172h60"/></g><g font-family="Caveat, cursive" font-weight="700" font-size="26"><text x="156" y="78" fill="var(--ok)">✓</text><text x="156" y="112" fill="var(--pen)">✗</text><text x="156" y="146" fill="var(--ok)">✓</text></g><rect x="62" y="158" width="76" height="24" rx="6" stroke="var(--warn)" stroke-width="2.5" fill="var(--warnbg)"/><text x="146" y="180" font-family="Caveat, cursive" font-weight="700" font-size="26" fill="var(--warn)">?</text><g transform="rotate(-8 172 46)"><circle cx="172" cy="46" r="24" fill="var(--surface)" stroke="var(--pen)" stroke-width="3"/><text x="172" y="58" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="36" fill="var(--pen)">5</text></g></svg>`,
+ safe:`<svg viewBox="0 0 240 240" fill="none"><rect x="40" y="56" width="96" height="128" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 6"/><g stroke="var(--line)" stroke-width="2" opacity=".7"><path d="M56 86h62M56 108h56M56 130h62M56 152h40"/></g><path d="M160 46l44 16v38c0 34-24 56-44 66-20-10-44-32-44-66V62z" fill="var(--surface)" stroke="var(--ok)" stroke-width="4" stroke-linejoin="round"/><path d="M142 104l13 13 25-27" stroke="var(--ok)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+};
+const SLIDES=[
+ {art:"scan",h:"Zrób zdjęcie pracy",p:"Kartkówka, sprawdzian, dowolny układ. Bez specjalnych arkuszy i drukowania."},
+ {art:"grade",h:"Punkty i ocena w kilka sekund",p:"Aplikacja czyta pismo uczniów, liczy punkty i wskazuje miejsca, na które warto spojrzeć."},
+ {art:"safe",h:"Prywatność uczniów na pierwszym miejscu",p:"Zdjęcia nie trafiają do galerii ani do pamięci telefonu. Znikają zaraz po sprawdzeniu."}
+];
+let onbI=0;
+function onbRender(){
+  const s=SLIDES[onbI];
+  $("#onbArt").innerHTML=`<div class="fadein" style="display:grid;place-items:center;width:100%;height:100%">${ART[s.art]}</div>`;
+  $("#onbText").innerHTML=`<h2 class="fadein">${s.h}</h2><p class="fadein">${s.p}</p>`;
+  [...$("#onbDots").children].forEach((d,i)=>d.classList.toggle("on",i===onbI));
+  $("#onbNext").textContent=onbI===SLIDES.length-1?"Zaczynamy":"Dalej";
+  $("#onbSkip").hidden=onbI===SLIDES.length-1;
+}
+function onbOpen(){onbI=0;onbRender();$("#onb").hidden=false}
+function onbClose(){$("#onb").hidden=true;ls.set("onb",true)}
+$("#onbNext").onclick=()=>{if(onbI<SLIDES.length-1){onbI++;onbRender()}else onbClose()};
+$("#onbSkip").onclick=onbClose;
+let tx=null;
+$("#onb").addEventListener("touchstart",e=>tx=e.touches[0].clientX,{passive:true});
+$("#onb").addEventListener("touchend",e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;
+  if(dx<-50&&onbI<SLIDES.length-1){onbI++;onbRender()}else if(dx>50&&onbI>0){onbI--;onbRender()}});
+if(!ls.get("onb",false))onbOpen();
+$("#replayOnb").onclick=onbOpen;
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>(Math.round(n*2)/2).toString().replace(".",",");
+
+function renderHome(){
+  $("#planBadge").textContent=S.pro?"PRO":"FREE";$("#planBadge").classList.toggle("pro",S.pro);
+  $("#quotaPanel").hidden=S.pro;
+  const left=Math.max(0,FREE-S.used);
+  $("#quotaText").textContent=left>0?`Zostało ${left} z ${FREE} darmowych skanów`:"Darmowe skany wykorzystane";
+  $("#quotaBar").style.width=Math.min(100,S.used/FREE*100)+"%";
+  const k=S.key;
+  $("#keyDot").classList.toggle("on",!!k);
+  $("#keyTitle").textContent=k?`Wzór: ${k.title||"sprawdzian"}`:"Bez wzoru odpowiedzi";
+  $("#keyDesc").textContent=k?`${k.tasks.length} zadań · ${fmt(k.tasks.reduce((a,t)=>a+(+t.max||0),0))} pkt. Każda praca jest porównywana z tym wzorem.`:"Aplikacja sama oceni poprawność. Dla największej pewności zeskanuj najpierw swój wzór (klucz) z poprawnymi odpowiedziami.";
+  $("#keyBtn").textContent=k?"Zmień wzór":"Zeskanuj wzór";
+  $("#keyClear").hidden=!k;
+  $("#lastPanel").hidden=!S.last;
+  if(S.last){const r=calc(S.last);$("#lastInfo").textContent=`${fmt(r.pts)} / ${fmt(r.max)} pkt · ocena ${r.grade.g}${S.last.demo?" (przykład)":""}`}
+}
+
+/* ---------- privacy: memory only ---------- */
+function wipe(){
+  if(S.last){S.last.pages.forEach(p=>p.url&&URL.revokeObjectURL(p.url));S.last=null}
+  S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
+}
+$("#wipeNow").onclick=()=>{wipe();renderHome();toast("Skan usunięty z pamięci")};
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)S.hiddenAt=Date.now();
+  else if(S.hiddenAt&&Date.now()-S.hiddenAt>10*60*1000){wipe();show("home");renderHome()}
+});
+
+/* ---------- camera ---------- */
+const cam=$("#cam");
+function openCamera(){cam.value="";cam.click()}
+cam.onchange=async()=>{
+  const f=cam.files&&cam.files[0];if(!f)return;
+  try{const blob=await prep(f);S.pages.push({blob,url:URL.createObjectURL(blob)});renderCapture();show("capture")}
+  catch(e){toast("Nie udało się odczytać zdjęcia. Spróbuj ponownie.")}
+  cam.value="";
+};
+async function prep(file){
+  const u=URL.createObjectURL(file);
+  try{
+    const img=new Image();img.src=u;await img.decode();
+    const max=1568,sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(),"image/jpeg",.86));
+  }finally{URL.revokeObjectURL(u)}
+}
+function canScan(){return S.pro||S.used<FREE}
+$("#scanBtn").onclick=()=>{
+  if(!canScan()){openPay(true);return}
+  S.mode="student";wipe();renderHome();openCamera();
+};
+$("#keyBtn").onclick=()=>{S.mode="key";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()};
+$("#keyClear").onclick=()=>{S.key=null;ls.set("key",null);renderHome();toast("Wzór usunięty")};
+
+function renderCapture(){
+  const limit=S.maxImg-(S.mode==="student"&&S.key?0:0);
+  $("#capTitle").textContent=S.mode==="key"?"Wzór odpowiedzi":"Praca ucznia";
+  $("#capHint").textContent=S.mode==="key"?"Sfotografuj kartkę z poprawnymi odpowiedziami. Wszystkie strony wzoru dodaj tutaj.":"Sprawdzian ma kilka stron? Dodaj je wszystkie, zanim zaczniesz sprawdzanie.";
+  const t=$("#thumbs");t.innerHTML="";
+  S.pages.forEach((p,i)=>{
+    const d=document.createElement("div");d.className="thumb";
+    d.innerHTML=`<img alt="Strona ${i+1}" src="${p.url}"><span class="n">Strona ${i+1}</span><button class="x" aria-label="Usuń stronę">✕</button>`;
+    d.querySelector(".x").onclick=()=>{URL.revokeObjectURL(p.url);S.pages.splice(i,1);if(!S.pages.length){show("home");renderHome()}else renderCapture()};
+    t.appendChild(d);
+  });
+  if(S.pages.length<limit){const a=document.createElement("button");a.className="addpage";a.innerHTML="+<br>Dodaj stronę";a.onclick=openCamera;t.appendChild(a)}
+  $("#capGo").textContent=S.mode==="key"?"Odczytaj wzór":"Sprawdź pracę";
+}
+$("#capCancel").onclick=()=>{S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];show("home");renderHome()};
+$("#capGo").onclick=()=>S.mode==="key"?readKey():gradeWork();
+
+/* ---------- working screen ---------- */
+let stepTimer;
+function working(title,list){
+  $("#workTitle").textContent=title;$("#workImg").src=S.pages[0].url;
+  const box=$("#steps");box.innerHTML=list.map(s=>`<div class="step"><i></i>${esc(s)}</div>`).join("");
+  const els=[...box.children];let i=0;
+  const tick=()=>{els.forEach((e,j)=>{e.className="step"+(j<i?" done":j===i?" now":"")});if(i<els.length-1){i++;stepTimer=setTimeout(tick,2600+i*1200)}};
+  clearTimeout(stepTimer);tick();show("work");
+}
+$("#workStop").onclick=()=>{S.ctl&&S.ctl.abort()};
+function errText(e){
+  switch(e&&e.code){
+    case "cancelled":return null;
+    case "not_granted":case "sampling_disabled":return "Brak zgody na odczyt AI. Otwórz stronę ponownie i zezwól na użycie Claude.";
+    case "rate_limited":return "Za dużo skanów naraz. Odczekaj chwilę i spróbuj ponownie.";
+    case "image_rejected":return "Zdjęcie jest za duże lub ma zły format. Zrób nowe zdjęcie.";
+    case "invalid_json":case "empty_completion":return "Nie udało się odczytać kartki. Zrób wyraźniejsze zdjęcie i spróbuj ponownie.";
+    case "session_expired":return "Sesja wygasła. Zaloguj się ponownie.";
+    case "bad_code":return "Niepoprawny kod dostępu.";
+    case "no_key":return "Serwer nie ma klucza API. Dodaj ANTHROPIC_API_KEY w ustawieniach Vercel.";
+    default:return "Coś przerwało sprawdzanie. Spróbuj ponownie.";
+  }
+}
+
+/* ---------- prompts ---------- */
+function keyPrompt(n){return `You are reading the ANSWER KEY (the teacher's model solution) of a school test or quiz, photographed with a phone. There ${n>1?`are ${n} pages, in order`:"is 1 page"}. The test is most likely in Polish.
+Extract every task and sub-task in reading order. For each give:
+- "nr": the number as printed ("1", "2a", "3.1")
+- "type": one of "abcd" (multiple choice), "tf" (true/false), "match" (connect with lines), "fill" (fill in missing words), "open" (open answer), "other"
+- "question": the question shortened to max 10 words, in the test's language
+- "answer": the correct answer. Multiple choice: the letter(s). Matching: pairs like "1-C, 2-A". Fill-in: the words in order separated by " | ". Open: the key points a full answer must contain.
+- "max": points for the task as printed (e.g. "(2 pkt)", "/3"); if not printed use 1.
+Also "title": a short name of the test (subject + topic) if visible, else "".
+Reply with only JSON: {"title":"...","tasks":[{"nr":"1","type":"abcd","question":"...","answer":"B","max":1}]}`}
+
+function studentPrompt(n){
+  const key=S.key?`ANSWER KEY prepared by the teacher (authoritative, grade against it):\n${JSON.stringify(S.key.tasks)}\n`:`There is NO answer key. Decide correctness yourself from subject knowledge at the appropriate school level. When you are not fully sure what the correct answer is, use status "check".\n`;
+  return `You are an experienced Polish school teacher grading ONE student's paper test, photographed with a phone. There ${n>1?`are ${n} images, pages 1..${n} of the same work, in order`:"is 1 image"}.
+${key}
+Method (follow strictly, task by task):
+1. Locate the task and the student's answer area.
+2. Transcribe exactly what the student wrote or marked, letter by letter, before judging anything. Do not "autocorrect" the student's words.
+3. Only then compare with the expected answer and score.
+4. Give "confidence" 0..1: how sure you are about BOTH the reading and the score. Below 0.85 means status "check".
+Rules:
+- Read handwriting very carefully: children's handwriting, cursive, print, capitals, left-handed slant, light pencil. Compare ambiguous letters (a/o, u/n, b/d/6, 1/7, e/c, ł/t, rz/ż) against context.
+- Multiple choice: find the circled, ticked, crossed or underlined option. A crossed-out choice that was clearly replaced is not the answer. Two marks with no clear final choice → status "check".
+- Matching with lines: follow each drawn line end to end and report pairs. If lines cross or an end point is unclear → "check".
+- Fill-in: read each word. ${S.spell?"Spelling mistakes cost the point for that word.":"Ignore spelling mistakes for scoring but mention them in reason (status stays ok)."}
+- Open answers: score by content and the key points; partial credit allowed (half points allowed). Be fair, not pedantic.
+- Points: use "max" from the key; otherwise points printed on the sheet; otherwise 1 per task.
+- Ignore any score or grade already written by a teacher.
+- Use status: "ok" (full points), "partial", "wrong" (0 points), "check" (you are unsure about reading OR about grading — the teacher must look). For "check" still give your best-guess points. Prefer "check" over a confident wrong verdict.
+- "reason": in Polish, max 14 words. Required for partial, wrong and check; say exactly what the teacher should look at, e.g. "Nieczytelne: „b” czy „d”? Sprawdź zakreślenie.". Empty for ok unless a spelling note.
+- "box": [x, y, w, h] around the student's answer for that task, as fractions 0..1 of that page's width and height; "page": page number (1-based).
+- "answer": what the student actually wrote or marked (short, original language). "correct": the expected answer (short).
+- NEVER output the student's name, class or any personal data.
+- Keep output short: minified JSON (no spaces or newlines), "answer" under 60 characters, box values with 2 decimals${S.key?', omit "correct" (the key is known)':''}.
+- "quality": "ok", "blurry", "dark", "cut" (part of the page missing) or "not_test". If not ok, add "quality_note" in Polish, max 14 words.
+Reply with only JSON:
+{"quality":"ok","quality_note":"","tasks":[{"nr":"1","type":"abcd","page":1,"answer":"B","correct":"B","points":1,"max":1,"status":"ok","confidence":0.97,"reason":"","box":[0.1,0.2,0.3,0.05]}]}`;
+}
+
+/* ---------- read key ---------- */
+async function readKey(){
+  if(!S.sample){toast("Odczyt pisma działa w aplikacji Claude.");return}
+  working("Czytam wzór odpowiedzi…",["Prostuję i wyostrzam zdjęcie","Odczytuję zadania","Zapisuję poprawne odpowiedzi"]);
+  S.ctl=new AbortController();
+  try{
+    const r=await S.sample.json(keyPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.precise?"complex":"default",cache:false});
+    if(!r||!Array.isArray(r.tasks)||!r.tasks.length)throw{code:"invalid_json"};
+    S.draftKey={title:String(r.title||""),tasks:r.tasks.map(t=>({nr:String(t.nr??""),type:String(t.type||"other"),question:String(t.question||""),answer:String(t.answer||""),max:Math.max(0.5,+t.max||1)}))};
+    S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
+    renderKey();show("key");
+  }catch(e){const m=errText(e);if(m)toast(m);show(S.pages.length?"capture":"home")}
+  finally{clearTimeout(stepTimer)}
+}
+function renderKey(){
+  const box=$("#keyTasks");box.innerHTML="";
+  S.draftKey.tasks.forEach((t,i)=>{
+    const d=document.createElement("div");d.className="task";
+    d.innerHTML=`<div class="task-head"><span class="task-nr">${esc(t.nr)}</span><span class="grow small muted">${esc(t.question)}</span>
+      <div class="stepper"><button aria-label="Mniej punktów">−</button><output>${fmt(t.max)} pkt</output><button aria-label="Więcej punktów">+</button></div></div>
+      <input class="field" id="key-ans-${i}" value="${esc(t.answer)}" aria-label="Poprawna odpowiedź">`;
+    const [mi,pl]=d.querySelectorAll(".stepper button"),out=d.querySelector("output");
+    mi.onclick=()=>{t.max=Math.max(0.5,t.max-0.5);out.textContent=fmt(t.max)+" pkt"};
+    pl.onclick=()=>{t.max=t.max+0.5;out.textContent=fmt(t.max)+" pkt"};
+    d.querySelector("input").oninput=e=>t.answer=e.target.value;
+    box.appendChild(d);
+  });
+}
+$("#keySave").onclick=()=>{S.key=S.draftKey;S.draftKey=null;ls.set("key",S.key);show("home");renderHome();toast("Wzór zapisany. Skanuj prace uczniów.")};
+$("#keyRetake").onclick=()=>{S.draftKey=null;S.mode="key";openCamera()};
+
+/* ---------- grade work ---------- */
+async function gradeWork(){
+  if(!S.sample){toast("Odczyt pisma działa w aplikacji Claude.");return}
+  if(!canScan()){openPay(true);return}
+  working("Sprawdzam pracę…",["Prostuję i wyostrzam zdjęcie","Odczytuję pismo ucznia","Porównuję z odpowiedziami","Sprawdzam wątpliwe miejsca z bliska","Liczę punkty i ocenę"]);
+  S.ctl=new AbortController();S.cost=0;
+  try{
+    const r=await S.sample.json(studentPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.first,cache:false});
+    if(!r||!Array.isArray(r.tasks))throw{code:"invalid_json"};
+    const tasks=r.tasks.map(t=>{
+      const max=Math.max(0,+t.max||1);let pts=Math.min(max,Math.max(0,+t.points||0));
+      const st=["ok","partial","wrong","check"].includes(t.status)?t.status:"check";
+      const b=Array.isArray(t.box)&&t.box.length===4?t.box.map(v=>Math.min(1,Math.max(0,+v||0))):null;
+      const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
+      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(S.pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false};
+    });
+    if(tasks.length){await verify(tasks,S.ctl.signal,S.first,false);if(S.precise)await verify(tasks,S.ctl.signal,"complex",true)}
+    S.last={pages:S.pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?S.cost:null};
+    S.pages=[];
+    if(tasks.length){S.used++;ls.set("used",S.used)}
+    renderResult();show("result");
+  }catch(e){const m=errText(e);if(m)toast(m);show("capture")}
+  finally{clearTimeout(stepTimer)}
+}
+
+/* ---------- precise mode: second look at close-up crops ---------- */
+async function crop(blob,box){
+  const bmp=await createImageBitmap(blob);
+  try{
+    const W=bmp.width,H=bmp.height,[x,y,w,h]=box;
+    const mx=Math.max(w*.25,.05),my=Math.max(h*.6,.035);
+    const x0=Math.max(0,x-mx),y0=Math.max(0,y-my),x1=Math.min(1,x+w+mx),y1=Math.min(1,y+h+my);
+    const sw=Math.max(8,(x1-x0)*W),sh=Math.max(8,(y1-y0)*H);
+    const k=Math.min(3,Math.max(1,1100/sw));
+    const c=document.createElement("canvas");c.width=Math.round(sw*k);c.height=Math.round(sh*k);
+    const g=c.getContext("2d");g.imageSmoothingQuality="high";
+    g.drawImage(bmp,x0*W,y0*H,sw,sh,0,0,c.width,c.height);
+    return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(),"image/jpeg",.92));
+  }finally{bmp.close&&bmp.close()}
+}
+const norm=s=>String(s||"").toLowerCase().replace(/[\s.,;:!?()„”"'«»-]+/g," ").trim();
+async function verify(tasks,signal,tier,onlyCheck){
+  const rank=t=>t.status==="check"?0:onlyCheck?9:t.conf<0.9?1:(t.status==="wrong"||t.status==="partial")?2:9;
+  const pick=tasks.map((t,i)=>({t,i,r:rank(t)})).filter(o=>o.r<9&&o.t.box).sort((a,b)=>a.r-b.r).slice(0,onlyCheck?3:S.maxImg);
+  if(!pick.length)return;
+  const imgs=[];
+  for(const o of pick)imgs.push(await crop(S.pages[o.t.page-1].blob,o.t.box));
+  const keyOf=nr=>S.key?S.key.tasks.find(k=>norm(k.nr)===norm(nr)):null;
+  const list=pick.map((o,j)=>{const k=keyOf(o.t.nr);return `Image ${j+1} → task "${o.t.nr}" (type ${o.t.type||"?"}, max ${o.t.max} pts). Expected answer: ${JSON.stringify(k?k.answer:o.t.correct)}${k&&k.question?` (question: ${JSON.stringify(k.question)})`:""}.`}).join("\n");
+  const prompt=`You are double-checking automatic grading of a student's handwritten test. Each image is a CLOSE-UP crop of one task's answer area (crop may include neighbouring lines; focus on the named task).
+${list}
+For each image, read the student's answer again INDEPENDENTLY, letter by letter, as if seeing it for the first time. Consider ambiguous letters carefully, crossed-out text, which option is circled, where each drawn line ends.
+${S.spell?"Spelling mistakes cost the point in fill-in tasks.":"Ignore spelling mistakes for scoring (mention them in reason)."}
+Then score it against the expected answer (half points allowed for open answers).
+"status": "ok" | "partial" | "wrong" | "check" (still uncertain after close look). "confidence" 0..1. "reason": Polish, max 14 words, required unless status ok.
+Never output the student's name.
+Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"image":1,"answer":"...","points":1,"status":"ok","confidence":0.95,"reason":""}]}`;
+  let r;
+  try{r=await S.sample.json(prompt,{images:imgs,signal,modelTier:tier,cache:false})}
+  catch(e){if(e&&e.code==="cancelled")throw e;return}
+  if(!r||!Array.isArray(r.tasks))return;
+  r.tasks.forEach(v=>{
+    const o=pick[(+v.image||0)-1];if(!o)return;
+    const t=o.t,vc=Math.min(1,Math.max(0,+v.confidence||0)),vp=Math.min(t.max,Math.max(0,+v.points||0));
+    const vs=["ok","partial","wrong","check"].includes(v.status)?v.status:"check";
+    const same=norm(v.answer)===norm(t.answer);
+    if(same||vc>=0.9){
+      t.answer=String(v.answer??t.answer);t.points=vp;t.conf=vc;
+      t.status=vc<0.85?"check":vs;t.reason=String(v.reason||"");
+    }else{
+      t.points=vp;t.conf=Math.min(t.conf,vc);t.status="check";
+      t.reason=`Dwa różne odczyty: „${t.answer}” albo „${v.answer}”. Sprawdź.`;t.answer=String(v.answer??t.answer);
+    }
+  });
+}
+
+/* ---------- scoring ---------- */
+function calc(sc){
+  const pts=sc.tasks.reduce((a,t)=>a+t.points,0),max=sc.tasks.reduce((a,t)=>a+t.max,0);
+  const pct=max?Math.round(pts/max*100):0;
+  const sorted=[...S.scale].sort((a,b)=>b.min-a.min);
+  const grade=sorted.find(s=>pct>=s.min)||sorted[sorted.length-1];
+  return{pts,max,pct,grade};
+}
+function stat(t){return t.status==="check"&&!t.resolved?"check":t.points>=t.max?"ok":t.points>0?"partial":"wrong"}
+
+function renderResult(){
+  const sc=S.last,r=calc(sc);
+  $("#resLabel").textContent=sc.demo?"Przykład":"Wynik";
+  $("#gradeRing").textContent=r.grade.g;
+  $("#ptsText").textContent=`${fmt(r.pts)} / ${fmt(r.max)} pkt`;
+  $("#pctText").textContent=`${r.pct}% · ${r.grade.n}`;
+  const c={ok:0,partial:0,wrong:0,check:0};sc.tasks.forEach(t=>c[stat(t)]++);
+  $("#chips").innerHTML=(c.check?`<span class="chip chk">? Do sprawdzenia: ${c.check}</span>`:"")+`<span class="chip ok">✓ ${c.ok}</span>`+(c.partial?`<span class="chip chk">½ ${c.partial}</span>`:"")+`<span class="chip bad">✗ ${c.wrong}</span>`;
+  $("#costLine").hidden=sc.cost==null;if(sc.cost!=null)$("#costLine").textContent=`Koszt tego skanu: ${(sc.cost*100).toFixed(2).replace(".",",")} gr brutto`;
+  const qn=$("#qualityNote");qn.hidden=sc.quality==="ok"||!sc.qnote;qn.textContent=sc.qnote?("Uwaga: "+sc.qnote):"";
+
+  const sh=$("#sheets");sh.innerHTML="";
+  sc.pages.forEach((p,pi)=>{
+    const w=document.createElement("div");w.className="sheet";
+    let h=`<img alt="Strona ${pi+1} pracy" src="${p.url}">`;
+    if(pi===0)h+=`<div class="stamp">${fmt(r.pts)}/${fmt(r.max)} pkt<br>${r.pct}% · ${esc(r.grade.g)}</div>`;
+    sc.tasks.forEach((t,ti)=>{
+      if(t.page!==pi+1||!t.box)return;
+      const s=stat(t),[x,y,bw,bh]=t.box;
+      if(s==="check")h+=`<div class="box" style="left:${x*100}%;top:${y*100}%;width:${bw*100}%;height:${bh*100}%"></div>`;
+      const lx=Math.min(88,(x+bw)*100+1);
+      const txt=s==="check"?"?":(s==="ok"?"✓ ":s==="wrong"?"✗ ":"½ ")+fmt(t.points)+"/"+fmt(t.max);
+      h+=`<button class="pm ${s==="ok"?"ok":s==="check"?"chk":""}" data-t="${ti}" style="left:${lx}%;top:${(y+bh/2)*100}%">${txt}</button>`;
+    });
+    w.innerHTML=h;sh.appendChild(w);
+  });
+  sh.querySelectorAll(".pm").forEach(b=>b.onclick=()=>{const el=document.getElementById("task-"+b.dataset.t);el.scrollIntoView({behavior:"smooth",block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")});
+
+  const box=$("#tasks");box.innerHTML="";
+  const order=sc.tasks.map((t,i)=>i).sort((a,b)=>(stat(sc.tasks[b])==="check")-(stat(sc.tasks[a])==="check"));
+  order.forEach(i=>{
+    const t=sc.tasks[i],s=stat(t);
+    const d=document.createElement("div");d.className="task"+(s==="check"?" chk":"");d.id="task-"+i;
+    const chip=s==="check"?`<span class="chip chk">Sprawdź</span>`:s==="ok"?`<span class="chip ok">Dobrze</span>`:s==="partial"?`<span class="chip chk">Częściowo</span>`:`<span class="chip bad">Źle</span>`;
+    d.innerHTML=`<div class="task-head"><span class="task-nr">${esc(t.nr)}</span>${chip}
+      <div class="stepper"><button aria-label="Mniej punktów">−</button><output>${fmt(t.points)}/${fmt(t.max)}</output><button aria-label="Więcej punktów">+</button></div></div>
+      <dl class="ans" style="margin:0"><dt>Uczeń</dt><dd class="hand">${esc(t.answer||"—")}</dd>${t.correct?`<dt>Poprawnie</dt><dd>${esc(t.correct)}</dd>`:""}</dl>
+      ${(t.reason||s==="check")?`<div class="reason">${s==="check"?"⚠ ":""}${esc(t.reason||"Niska pewność odczytu. Rzuć okiem na to zadanie.")}</div>`:""}
+      ${s==="check"?`<button class="resolve">Sprawdzone, punkty się zgadzają</button>`:""}`;
+    const [mi,pl]=d.querySelectorAll(".stepper button");
+    mi.onclick=()=>{t.points=Math.max(0,t.points-0.5);t.resolved=true;renderResult()};
+    pl.onclick=()=>{t.points=Math.min(t.max,t.points+0.5);t.resolved=true;renderResult()};
+    const rs=d.querySelector(".resolve");if(rs)rs.onclick=()=>{t.resolved=true;renderResult()};
+    box.appendChild(d);
+  });
+}
+$("#resHome").onclick=$("#resDone").onclick=()=>{show("home");renderHome()};
+$("#resNext").onclick=()=>{
+  wipe();
+  if(!canScan()){show("home");renderHome();openPay(true);return}
+  S.mode="student";show("home");renderHome();openCamera();
+};
+$("#lastOpen").onclick=()=>{if(S.last){renderResult();show("result")}};
+
+/* ---------- paywall ---------- */
+let plan="y";
+function openPay(limit){$("#payLead").textContent=limit?"Wykorzystałeś 30 darmowych skanów. Przejdź na Pro i sprawdzaj bez limitu.":"Sprawdzaj prace bez limitu skanów.";$("#paySheet").hidden=false}
+$("#openPay").onclick=()=>show("plan");
+document.querySelectorAll(".plan").forEach(b=>b.onclick=()=>{plan=b.dataset.plan;document.querySelectorAll(".plan").forEach(x=>x.classList.toggle("sel",x.dataset.plan===plan))});
+function activate(){S.pro=true;S.plan=plan;S.since=Date.now();ls.set("pro",true);ls.set("plan",plan);ls.set("since",S.since);renderHome();renderPlan();toast(plan==="y"?"Pro roczne aktywne (podgląd)":"Pro miesięczne aktywne (podgląd)")}
+$("#buyBtn").onclick=()=>{$("#paySheet").hidden=true;activate()};
+$("#pnBuyBtn").onclick=activate;
+$("#restoreBtn").onclick=()=>toast(S.pro?"Subskrypcja jest aktywna":"Nie znaleziono aktywnej subskrypcji");
+$("#pnCancelDemo").onclick=()=>{S.pro=false;ls.set("pro",false);renderHome();renderPlan();toast("Wrócono do planu Free")};
+function renderPlan(){
+  const left=Math.max(0,FREE-S.used);
+  $("#pnName").textContent=S.pro?"Pro":"Free";
+  $("#pnBadge").textContent=S.pro?"PRO":"FREE";$("#pnBadge").classList.toggle("pro",S.pro);
+  $("#pnFree").hidden=S.pro;$("#pnBuy").hidden=S.pro;$("#pnProInfo").hidden=!S.pro;$("#pnCancelDemo").hidden=!S.pro;
+  $("#pnQuota").textContent=left>0?`Zostało ${left} z ${FREE} darmowych skanów`:"Darmowe skany wykorzystane";
+  $("#pnBar").style.width=Math.min(100,S.used/FREE*100)+"%";
+  if(S.pro){const p=ls.get("plan","y"),s=ls.get("since",Date.now()),end=new Date(s+(p==="y"?365:30)*864e5);
+    $("#pnProInfo").textContent=`Plan ${p==="y"?"roczny, 79 zł":"miesięczny, 9,99 zł"} · odnowienie ${end.toLocaleDateString("pl-PL")} · bez limitu skanów`}
+}
+$("#payClose").onclick=()=>$("#paySheet").hidden=true;
+
+/* ---------- settings ---------- */
+function renderScale(){
+  $("#scaleRows").innerHTML=S.scale.map((s,i)=>`<div class="scale"><label for="sc-${i}">${esc(s.g)} · ${esc(s.n)}</label><input id="sc-${i}" type="number" min="0" max="100" inputmode="numeric" value="${s.min}" ${s.min===0&&i===S.scale.length-1?"disabled":""}></div>`).join("");
+  S.scale.forEach((s,i)=>{const el=$("#sc-"+i);el.oninput=()=>{s.min=Math.max(0,Math.min(100,+el.value||0));ls.set("scale",S.scale)}});
+}
+function renderFirst(){document.querySelectorAll("[data-first]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.first===S.first))}
+document.querySelectorAll("[data-first]").forEach(b=>b.onclick=()=>{S.first=b.dataset.first;ls.set("first",S.first);renderFirst()});
+$("#openSettings").onclick=()=>{renderScale();renderFirst();$("#precise").checked=S.precise;$("#spell").checked=S.spell;$("#setSheet").hidden=false};
+$("#precise").onchange=e=>{S.precise=e.target.checked;ls.set("precise",S.precise)};
+$("#spell").onchange=e=>{S.spell=e.target.checked;ls.set("spell",S.spell)};
+$("#resetScale").onclick=()=>{S.scale=JSON.parse(JSON.stringify(DEFAULT_SCALE));ls.set("scale",S.scale);renderScale()};
+$("#setClose").onclick=()=>{$("#setSheet").hidden=true;renderHome();if(S.last&&!$("#v-result").hidden)renderResult()};
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.hidden=true}));
+
+/* ---------- documents ---------- */
+const F=t=>`<span class="fill">${t}</span>`;
+const DOCS={
+privacy:{t:"Polityka prywatności",l:"Wersja z 25.10.2026",b:`
+<h3>1. Kto odpowiada za dane</h3>
+<p>Aplikację Sprawdzik udostępnia ${F("[nazwa firmy, adres, NIP]")} działający pod marką Cube Mobile Apps (dalej: „my”). Kontakt w sprawach danych osobowych: cubemobilegame@gmail.com.</p>
+<p>Prace uczniów skanuje nauczyciel w ramach swoich obowiązków. W stosunku do danych uczniów administratorem jest szkoła lub nauczyciel, a my przetwarzamy te dane wyłącznie na ich polecenie, w celu sprawdzenia pracy. Szkoła może zawrzeć z nami umowę powierzenia przetwarzania danych. Napisz do nas, a prześlemy wzór.</p>
+<h3>2. Zdjęcia prac uczniów</h3>
+<ul>
+<li>Zdjęcie nie jest zapisywane w galerii ani w pamięci telefonu. Aplikacja trzyma je tylko w pamięci operacyjnej.</li>
+<li>Do sprawdzenia zdjęcie jest wysyłane szyfrowanym połączeniem do naszego serwera, a stamtąd do dostawcy usługi rozpoznawania pisma (Anthropic PBC, USA). Nie zapisujemy zdjęć na naszym serwerze.</li>
+<li>Dostawca nie wykorzystuje przesłanych zdjęć do trenowania modeli. Przekazanie danych poza EOG odbywa się na podstawie ${F("[standardowych klauzul umownych / Data Privacy Framework]")}. Okres przechowywania u dostawcy: ${F("[uzupełnić zgodnie z umową z dostawcą]")}.</li>
+<li>Aplikacja nie zwraca i nie zapisuje imion i nazwisk uczniów. Wynik (punkty i ocena) istnieje tylko na ekranie.</li>
+<li>Ostatni skan jest usuwany z pamięci po kolejnym skanie, po zamknięciu aplikacji, po 10 minutach w tle albo po wybraniu „Usuń teraz”.</li>
+</ul>
+<h3>3. Dane nauczyciela</h3>
+<p>Nie wymagamy zakładania konta. Na urządzeniu zapisujemy tylko ustawienia: skalę ocen, wzór odpowiedzi, motyw i licznik darmowych skanów. Usuniesz je w zakładce Więcej.</p>
+<h3>4. Płatności</h3>
+<p>Subskrypcje obsługuje Google Play. Nie widzimy danych Twojej karty ani konta płatniczego. Otrzymujemy od Google tylko informację, czy subskrypcja jest aktywna.</p>
+<h3>5. Reklamy i analityka</h3>
+<p>Aplikacja nie wyświetla reklam i nie śledzi użytkowników do celów marketingowych.</p>
+<h3>6. Twoje prawa</h3>
+<p>Masz prawo do dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia oraz sprzeciwu. Masz też prawo wnieść skargę do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa).</p>
+<h3>7. Zmiany</h3>
+<p>O zmianach polityki poinformujemy w aplikacji. Aktualna wersja jest zawsze dostępna w zakładce Więcej.</p>`},
+terms:{t:"Regulamin",l:"Wersja z 25.10.2026",b:`
+<h3>1. Usługa</h3>
+<p>Sprawdzik pomaga nauczycielom sprawdzać prace pisemne uczniów na podstawie zdjęcia. Usługodawca: ${F("[nazwa firmy, adres, NIP]")}.</p>
+<h3>2. Rola nauczyciela</h3>
+<p>Wynik aplikacji jest propozycją. Ostateczną ocenę zawsze ustala nauczyciel. Odczyt pisma odręcznego może zawierać błędy, dlatego aplikacja oznacza miejsca wymagające sprawdzenia.</p>
+<h3>3. Plan Free i Pro</h3>
+<ul><li>Plan Free obejmuje 30 skanów prac.</li><li>Plan Pro kosztuje 9,99 zł miesięcznie lub 79 zł rocznie (z VAT) i nie ma limitu skanów.</li><li>Nowi użytkownicy mogą skorzystać z 7 dni bezpłatnego okresu próbnego.</li><li>Subskrypcja odnawia się automatycznie. Anulujesz ją w Google Play najpóźniej 24 godziny przed końcem okresu.</li><li>Zwroty rozpatruje Google Play zgodnie ze swoimi zasadami.</li></ul>
+<h3>4. Zasady korzystania</h3>
+<p>Skanuj tylko prace, do których sprawdzania masz uprawnienia. Nie używaj aplikacji do innych dokumentów zawierających dane osobowe.</p>
+<h3>5. Reklamacje</h3>
+<p>Reklamacje przyjmujemy pod adresem cubemobilegame@gmail.com. Odpowiadamy w ciągu 14 dni.</p>
+<p class="small muted">Treść polityki i regulaminu przygotowana jako wzór. Przed publikacją warto skonsultować ją z prawnikiem.</p>`},
+howto:{t:"Jak robić dobre zdjęcia",l:"Porady",b:`
+<ul>
+<li>Połóż kartkę płasko na ciemnym, jednolitym tle.</li>
+<li>Trzymaj telefon równolegle do kartki, tak żeby zmieściła się cała strona.</li>
+<li>Rób zdjęcia w dziennym świetle albo przy dobrej lampie. Uważaj na cień od ręki i telefonu.</li>
+<li>Pracę pisaną ołówkiem fotografuj z bliska i bez lampy błyskowej, żeby nie było odblasków.</li>
+<li>Jeśli praca ma kilka stron, dodaj je wszystkie przed kliknięciem „Sprawdź pracę”.</li>
+<li>Przy trudnym piśmie włącz Tryb dokładny w ustawieniach (koło zębate w prawym górnym rogu).</li>
+<li>Zeskanuj wcześniej swój wzór odpowiedzi. Aplikacja będzie wtedy dużo pewniejsza.</li>
+</ul>`}
+};
+document.querySelectorAll("[data-doc]").forEach(b=>b.onclick=()=>{const d=DOCS[b.dataset.doc];$("#docTitle").textContent=d.t;$("#docLabel").textContent=d.l;$("#docBody").innerHTML=d.b;show("doc")});
+$("#docBack").onclick=()=>show("more");
+$("#copyMail").onclick=()=>{navigator.clipboard?.writeText("cubemobilegame@gmail.com").then(()=>toast("Skopiowano adres"),()=>{const r=document.createRange();r.selectNodeContents($("#mail"));const s=getSelection();s.removeAllRanges();s.addRange(r)})};
+$("#wipeAll").onclick=()=>$("#wipeConfirm").hidden=false;
+$("#wipeNo").onclick=()=>$("#wipeConfirm").hidden=true;
+$("#wipeYes").onclick=()=>{wipe();S.key=null;S.scale=JSON.parse(JSON.stringify(DEFAULT_SCALE));S.precise=false;S.spell=false;["key","scale","precise","spell","theme"].forEach(k=>ls.set(k,null));try{["key","scale","precise","spell","theme"].forEach(k=>localStorage.removeItem("spr_"+k))}catch(e){}applyTheme();renderMore();$("#wipeConfirm").hidden=true;toast("Dane usunięte")};
+
+/* ---------- demo ---------- */
+async function demoSheet(){
+  try{await document.fonts.load("700 40px Caveat")}catch(e){}
+  const W=1000,H=1300,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+  g.fillStyle="#FBFBF7";g.fillRect(0,0,W,H);
+  g.strokeStyle="#DCE6F2";g.lineWidth=1;for(let y=150;y<H;y+=42){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke()}
+  g.fillStyle="#222";g.font="600 34px Georgia, serif";g.fillText("Kartkówka — Układ pokarmowy",60,80);
+  g.font="22px Georgia, serif";g.fillStyle="#444";g.fillText("Imię i nazwisko: ..............................   kl. ......",60,120);
+  const pen="#1D3FA8",hand=s=>`700 ${s}px Caveat, cursive`;
+  g.fillStyle="#222";g.font="24px Georgia, serif";
+  g.fillText("1. Gdzie zaczyna się trawienie skrobi? (1 pkt)",60,200);
+  ["a) w żołądku","b) w jamie ustnej","c) w jelicie grubym","d) w wątrobie"].forEach((t,i)=>g.fillText(t,90+(i%2)*400,245+Math.floor(i/2)*42));
+  g.strokeStyle=pen;g.lineWidth=3;g.beginPath();g.ellipse(510,238,22,20,0,0,7);g.stroke();
+  g.fillStyle="#222";g.font="24px Georgia, serif";g.fillText("2. Połącz narząd z funkcją. (3 pkt)",60,370);
+  const L=["żołądek","jelito cienkie","jelito grube"],R=["wchłanianie wody","trawienie białek","wchłanianie składników"];
+  L.forEach((t,i)=>g.fillText(t,100,420+i*50));R.forEach((t,i)=>g.fillText(t,560,420+i*50));
+  g.strokeStyle=pen;g.lineWidth=2.5;[[0,1],[1,2],[2,0]].forEach(([a,b])=>{g.beginPath();g.moveTo(260+(a==1?40:0),413+a*50);g.bezierCurveTo(400,413+a*50+10,430,413+b*50-10,550,413+b*50);g.stroke()});
+  g.fillStyle="#222";g.font="24px Georgia, serif";g.fillText("3. Uzupełnij: Żółć jest wytwarzana przez __________ (1 pkt)",60,600);
+  g.fillStyle=pen;g.font=hand(38);g.fillText("wontrobę",560,598);
+  g.fillStyle="#222";g.font="24px Georgia, serif";g.fillText("4. Dlaczego należy dokładnie żuć pokarm? (2 pkt)",60,690);
+  g.fillStyle=pen;g.font=hand(36);g.fillText("Bo pokarm jest rozdrabniany i łatwiej",80,745);g.fillText("go strawić, ślina go nawilża",80,790);
+  g.fillStyle="#222";g.font="24px Georgia, serif";g.fillText("5. Prawda (P) czy fałsz (F)? Jelito grube trawi tłuszcze. (1 pkt)",60,880);
+  g.fillStyle=pen;g.font=hand(40);g.fillText("P",880,882);g.strokeStyle=pen;g.lineWidth=3;g.beginPath();g.moveTo(870,860);g.lineTo(905,890);g.stroke();g.fillText("F?",915,884);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.9));
+  return{blob,url:URL.createObjectURL(blob)};
+}
+$("#demoBtn").onclick=async()=>{
+  wipe();const p=await demoSheet();
+  S.last={demo:true,quality:"ok",qnote:"",pages:[p],tasks:[
+    {nr:"1",page:1,answer:"b",correct:"b",points:1,max:1,status:"ok",reason:"",box:[.46,.165,.1,.04]},
+    {nr:"2",page:1,answer:"1-B, 2-C, 3-A",correct:"1-B, 2-C, 3-A",points:3,max:3,status:"ok",reason:"",box:[.2,.3,.45,.12]},
+    {nr:"3",page:1,answer:"wontrobę",correct:"wątrobę",points:1,max:1,status:"ok",reason:"Błąd ortograficzny: „wontrobę” zamiast „wątrobę”.",box:[.55,.43,.17,.04]},
+    {nr:"4",page:1,answer:"rozdrabnianie, łatwiej strawić, ślina nawilża",correct:"rozdrobnienie, wymieszanie ze śliną, początek trawienia",points:1.5,max:2,status:"partial",reason:"Brak wzmianki o enzymach w ślinie.",box:[.07,.55,.48,.08]},
+    {nr:"5",page:1,answer:"P przekreślone, F?",correct:"F",points:1,max:1,status:"check",reason:"Skreślone „P”, obok „F?”. Sprawdź, co uczeń uznał za ostateczne.",box:[.86,.65,.1,.04]}
+  ].map(t=>({...t,type:"",resolved:false}))};
+  renderResult();show("result");
+};
+
+try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("portrait").catch(()=>{})}catch(e){}
+renderHome();show("home");
+})();
+</script>
+</body>
+</html>

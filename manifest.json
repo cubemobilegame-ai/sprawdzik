@@ -1,0 +1,10 @@
+{
+  "name": "Sprawdzik",
+  "short_name": "Sprawdzik",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F6FA",
+  "theme_color": "#2846D2",
+  "icons": [{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }]
+}
