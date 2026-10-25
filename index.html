@@ -283,6 +283,9 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 #v-mark .sheet .pm{pointer-events:none}
 .gdist{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin-right:6px}
 .ser-grade.sm{width:30px;height:30px;font-size:19px}
+.mk-row.okr,.task.okrow{padding:10px 14px;background:var(--okbg);border-color:transparent}
+.mk-row.okr .mk-z{font-size:20px}
+.mk-row.okr .mk-p{font-size:22px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -873,13 +876,9 @@ function renderMark(){
   if(j.refining)h+=`<div class="row small muted"><i class="ser-spin"></i>Dopracowuję odczyt…</div>`;
   const nums={};let nk=0;order.forEach(k=>{if(stat(sc.tasks[k])==="check")nums[k]=++nk});
   h+=sheetsHtml(sc,nums);
-  const rows=order.filter(k=>markRow(sc.tasks[k])),chk=rows.filter(k=>stat(sc.tasks[k])==="check"),rest=rows.filter(k=>stat(sc.tasks[k])!=="check");
-  if(chk.length)h+=`<div class="mk-sec">Do Twojej decyzji</div>`;
-  if(rest.length&&chk.length)rest.unshift(-1);
-  chk.concat(rest).forEach(k=>{if(k<0){h+=`<div class="mk-sec">Błędy do naniesienia</div>`;return}const t=sc.tasks[k],s=stat(t);
+  order.forEach(k=>{const t=sc.tasks[k],s=stat(t);
+    if(!markRow(t)){h+=`<div class="mk-row okr"><div class="mk-line"><span class="mk-z">Zad. ${esc(t.nr)}</span><span class="okc" style="font-weight:700">✓ dobrze</span><span class="mk-p okc">${fmt(t.points)} / ${fmt(t.max)}</span></div></div>`;return}
     h+=`<div class="mk-row${s==="check"?" chk":""}" data-i="${k}"><div class="mk-line">${s==="check"?`<span class="dnum">${nums[k]}</span>`:""}<span class="mk-z">Zad. ${esc(t.nr)}</span><span class="mk-p ${s==="wrong"?"x":s==="ok"?"":"h"}">${fmt(t.points)} / ${fmt(t.max)}</span></div>${s==="check"?fixHtml(t,true):hasFix(t)?fixHtml(t):""}${s==="check"?`<div class="pts">${ptsHtml(t)}</div>`:""}</div>`});
-  const ok=order.filter(k=>!markRow(sc.tasks[k])).map(k=>`${esc(sc.tasks[k].nr)} (${fmt(sc.tasks[k].max)})`);
-  if(ok.length)h+=`<div class="mk-ok"><b class="okc">✓ Pełne punkty:</b> zad. ${ok.join(", ")}</div>`;
   body.innerHTML=h;
   body.querySelectorAll(".mk-row").forEach(row=>row.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{decide(sc.tasks[+row.dataset.i],+b.dataset.p,sc);renderMark();renderSeries()}));
   if(S.voice&&!j.refining&&MK.spoken!==j.id){MK.spoken=j.id;speak(speechFor(j))}
@@ -1776,22 +1775,23 @@ function renderResult(){
   const box=$("#tasks");box.innerHTML="";
   const order=orderIdx(sc.tasks);
   const nCheck=order.filter(i=>stat(sc.tasks[i])==="check").length;
-  $("#tasksH").textContent=S.showAll?"Wszystkie zadania":nCheck?`Do decyzji (${nCheck})`:"Błędy";
-  $("#showAll").textContent=S.showAll?"Pokaż tylko sporne":`Pokaż wszystkie (${order.length})`;
+  $("#tasksH").textContent=S.showAll?"Zmiana punktów":nCheck?`Zadania · do decyzji: ${nCheck}`:"Zadania";
+  $("#showAll").textContent=S.showAll?"Gotowe":"Zmień punkty";
   $("#noDoubts").hidden=S.showAll||order.some(i=>stat(sc.tasks[i])!=="ok");
   if(!S.showAll){
     const grp=k=>order.filter(i=>stat(sc.tasks[i])===k&&!((k!=="ok"||sc.tasks[i].type==="open")&&hasFix(sc.tasks[i]))).map(i=>esc(sc.tasks[i].nr));
     const ok=grp("ok"),bad=grp("wrong"),half=grp("partial");
     const sm=document.createElement("div");sm.className="sum";
     sm.innerHTML=(ok.length?`<div><b class="okc">✓ Dobrze:</b> ${ok.join(", ")}</div>`:"")+(bad.length?`<div><b class="badc">✗ Źle:</b> ${bad.join(", ")}</div>`:"")+(half.length?`<div><b class="halfc">½ Częściowo:</b> ${half.join(", ")}</div>`:"");
-    if(sm.innerHTML)box.appendChild(sm);
+
   }
-  order.filter(i=>{const st=stat(sc.tasks[i]);return S.showAll||st==="check"||((st==="wrong"||st==="partial"||sc.tasks[i].type==="open")&&hasFix(sc.tasks[i]))}).forEach(i=>{
+  order.forEach(i=>{
     const t=sc.tasks[i],s=stat(t);
+    if(!S.showAll&&s==="ok"&&!(t.type==="open"&&hasFix(t))){const d=document.createElement("div");d.className="task dense okrow";d.id="task-"+i;d.innerHTML=`<div class="drow"><span class="dnum o">✓</span><span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span><span class="okc grow" style="font-weight:700">dobrze</span><span class="okc" style="font-weight:700">${fmt(t.points)} / ${fmt(t.max)} pkt</span></div>`;box.appendChild(d);return}
     if((s!=="ok"||t.type==="open")&&!S.showAll){
       const d=document.createElement("div");d.className="task dense"+(s==="check"?" chk":" miss");d.id="task-"+i;
       const fixed=s!=="check"&&!t.resolved;
-      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div>${fixed?`<div class="small muted zero">${fmt(t.points)} / ${fmt(t.max)} pkt</div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
+      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${s==="check"||hasFix(t)?fixHtml(t):""}</div>${fixed?`<div class="small muted zero">${fmt(t.points)} / ${fmt(t.max)} pkt</div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
       d.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{decide(t,+b.dataset.p,sc);renderResult()});
       const cg=d.querySelector(".chg");if(cg)cg.onclick=()=>{t.resolved=true;renderResult()};
       box.appendChild(d);return;
