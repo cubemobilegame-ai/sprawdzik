@@ -188,6 +188,18 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .pm.num{width:30px;height:30px;padding:0;display:grid;place-items:center;font-family:var(--f-body);font-size:15px}
 .line1{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 8px;font-size:15px}
 .line1 b{font-size:16px}
+.dense{gap:10px}
+.drow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fix{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px;flex:1;min-width:0;font-size:16px}
+.fix b{font-size:18px}
+.wrongtxt{text-decoration:line-through;text-decoration-color:var(--pen);text-decoration-thickness:2px}
+.arr{color:var(--muted);font-weight:700}
+.warnc{color:var(--warn);font-weight:600}
+.pts{display:flex;align-items:center;gap:8px}
+.pt{min-width:54px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+.pt.on{border-color:var(--blue);background:var(--blue);color:var(--blue-ink)}
+.sum{display:flex;flex-direction:column;gap:4px;font-size:15px;padding:2px 2px 4px}
+.okc{color:var(--ok)}.badc{color:var(--pen)}.halfc{color:var(--warn)}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -662,15 +674,16 @@ async function renderReview(){
   const {j,t}=RV.items[RV.i];
   $("#rvProg").textContent=`${RV.i+1} z ${RV.items.length}`;
   $("#rvTitle").textContent=`Praca ${j.n} · zadanie ${t.nr}`;
-  $("#rvLine").innerHTML=lineHtml(t,"check");
+  $("#rvLine").innerHTML=fixHtml(t);
   $("#rvChip").innerHTML="";
-  $("#rvQ").textContent=t.question||t.reason||"Sprawdź odczyt";$("#rvQ").hidden=false;
+  $("#rvQ").hidden=true;
   $("#rvReason").hidden=true;
-  const hasOpt=!!(t.options&&t.options.length>1);
-  $("#rvOpts").innerHTML=hasOpt?optsHtml(t):"";$("#rvOpts").style.gridTemplateColumns=`repeat(${hasOpt?t.options.length:2},minmax(0,1fr))`;
-  $("#rvOpts").querySelectorAll(".opt").forEach(b=>b.onclick=()=>{choose(t,+b.dataset.o);RV.i++;renderReview()});
-  $("#rvBad").hidden=hasOpt;$("#rvOk").hidden=hasOpt;
-  $("#rvMax").textContent=fmt(t.max);$("#rvHalf").hidden=hasOpt||t.max<1;
+  const hasOpt=true;
+  $("#rvOpts").className="pts";$("#rvOpts").style.gridTemplateColumns="";
+  $("#rvOpts").innerHTML=ptsHtml(t);
+  $("#rvOpts").querySelectorAll(".pt").forEach(b=>b.onclick=()=>{t.points=+b.dataset.p;t.resolved=true;RV.i++;renderReview()});
+  $("#rvBad").hidden=true;$("#rvOk").hidden=true;
+  $("#rvMax").textContent=fmt(t.max);$("#rvHalf").hidden=true;
   const img=$("#rvImg");img.removeAttribute("src");
   try{if(t.spot||t.box){const b=await crop(j.res.pages[t.page-1].blob,t.spot||t.box);RV.url=URL.createObjectURL(b);img.src=RV.url}else img.src=j.res.pages[t.page-1].url}catch(e){}
 }
@@ -1074,6 +1087,13 @@ function orderIdx(tasks){return tasks.map((t,i)=>i).sort((a,b)=>{const A=tasks[a
 const DOUBT={illegible:["Nieczytelne pismo",'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'],two_marks:["Dwie odpowiedzi zaznaczone",'<path d="M3 12l4 4 8-8M11 16l1 1 9-9"/>'],line:["Niejasna linia",'<path d="M4 18C9 18 15 6 20 6"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/>'],content:["Ocena treści",'<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/>'],other:["Do sprawdzenia",'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>']};
 function doubtChip(t){const d=DOUBT[t.doubt]||DOUBT.other;return `<span class="chip chk dchip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d[1]}</svg>${d[0]}</span>`}
 function optsHtml(t){return (t.options||[]).map((o,i)=>{const c=o.points>=t.max?"g":o.points<=0?"r":"a";return `<button class="opt ${c}" data-o="${i}"><b>${esc(o.label)}</b><small>${fmt(o.points)} pkt</small></button>`}).join("")}
+function fixHtml(t){
+  const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
+  if(c)return `<div class="fix"><span class="hand wrongtxt">${esc(t.answer||"—")}</span><span class="arr" aria-label="powinno być">→</span><b>${esc(c)}</b></div>`;
+  return `<div class="fix"><span class="hand">${esc(t.answer||"—")}</span><span class="small warnc">${esc(t.question||t.reason||"sprawdź")}</span></div>`;
+}
+function ptsHtml(t){const v=[0];if(t.max>=1&&t.max%1===0&&t.max<=3)for(let k=1;k<=t.max;k++)v.push(k);else{if(t.max>=1)v.push(Math.round(t.max)/2);v.push(t.max)}
+  return [...new Set(v)].map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}" data-p="${p}">${fmt(p)}</button>`).join("")+`<span class="small muted">pkt</span>`}
 function lineHtml(t,s){const wrongish=s!=="ok"&&t.correct&&norm(t.correct)!==norm(t.answer);return `<div class="line1"><span class="hand">${esc(t.answer||"—")}</span>${wrongish?`<span class="muted small">→ powinno być</span><b>${esc(t.correct)}</b>`:""}</div>`}
 function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer=o.answer;t.choice=i;t.resolved=true}
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
@@ -1134,8 +1154,21 @@ function renderResult(){
   $("#tasksH").textContent=S.showAll?"Wszystkie zadania":"Do decyzji"+(nCheck?` (${nCheck})`:"");
   $("#showAll").textContent=S.showAll?"Pokaż tylko sporne":`Pokaż wszystkie (${order.length})`;
   $("#noDoubts").hidden=S.showAll||nCheck>0;
+  if(!S.showAll){
+    const grp=k=>order.filter(i=>stat(sc.tasks[i])===k).map(i=>esc(sc.tasks[i].nr));
+    const ok=grp("ok"),bad=grp("wrong"),half=grp("partial");
+    const sm=document.createElement("div");sm.className="sum";
+    sm.innerHTML=(ok.length?`<div><b class="okc">✓ Dobrze:</b> ${ok.join(", ")}</div>`:"")+(bad.length?`<div><b class="badc">✗ Źle:</b> ${bad.join(", ")}</div>`:"")+(half.length?`<div><b class="halfc">½ Częściowo:</b> ${half.join(", ")}</div>`:"");
+    if(sm.innerHTML)box.appendChild(sm);
+  }
   order.filter(i=>S.showAll||stat(sc.tasks[i])==="check").forEach(i=>{
     const t=sc.tasks[i],s=stat(t);
+    if(s==="check"&&!S.showAll){
+      const d=document.createElement("div");d.className="task chk dense";d.id="task-"+i;
+      d.innerHTML=`<div class="drow"><span class="dnum">${nums[i]}</span><span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div><div class="pts">${ptsHtml(t)}</div>`;
+      d.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{t.points=+b.dataset.p;t.resolved=true;renderResult()});
+      box.appendChild(d);return;
+    }
     const d=document.createElement("div");d.className="task"+(s==="check"?" chk":"");d.id="task-"+i;
     const chip=s==="check"?`<span class="dnum">${nums[i]}</span>`:s==="ok"?`<span class="chip ok">Dobrze</span>`:s==="partial"?`<span class="chip chk">Częściowo</span>`:`<span class="chip bad">Źle</span>`;
     d.innerHTML=`<div class="task-head"><span class="task-nr">${esc(t.nr)}</span>${chip}
