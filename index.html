@@ -212,6 +212,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .dnum.x{border-color:var(--pen);color:var(--pen)}
 .dnum.h{border-color:var(--warn);color:var(--warn)}
 .dnum.o{border-color:var(--ok);color:var(--ok)}
+.zero{display:flex;align-items:center;gap:6px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -1143,6 +1144,7 @@ function diffPairs(a,c){
 function hasFix(t){
   const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
   if(t.items&&t.items.some(x=>!eqI(x.answer,x.correct)))return true;
+  if(t.type==="open"||t.points>=t.max)return false;
   return !!(t.correct&&String(t.answer).length<=40&&String(t.correct).length<=40&&!eqI(t.correct,t.answer));
 }
 function fixHtml(t){
@@ -1244,8 +1246,10 @@ function renderResult(){
     const t=sc.tasks[i],s=stat(t);
     if((s!=="ok"||t.type==="open")&&!S.showAll){
       const d=document.createElement("div");d.className="task dense"+(s==="check"?" chk":" miss");d.id="task-"+i;
-      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div><div class="pts">${ptsHtml(t)}</div>`;
+      const fixed=s==="wrong"&&!t.resolved&&!(t.items&&t.items.length>1)&&t.type!=="open";
+      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div>${fixed?`<div class="small muted zero">0 / ${fmt(t.max)} pkt · <button class="link small chg">zmień</button></div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
       d.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{t.points=+b.dataset.p;t.resolved=true;renderResult()});
+      const cg=d.querySelector(".chg");if(cg)cg.onclick=()=>{t.resolved=true;renderResult()};
       box.appendChild(d);return;
     }
     const d=document.createElement("div");d.className="task"+(s==="check"?" chk":"");d.id="task-"+i;
