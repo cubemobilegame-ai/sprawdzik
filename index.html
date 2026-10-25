@@ -161,6 +161,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .pgsel button{min-width:0;height:40px;border-radius:12px;font-weight:700;border:1.5px solid color-mix(in srgb,var(--blue-ink) 45%,transparent);color:var(--blue-ink)}
 .pgsel button[aria-pressed="true"]{background:var(--blue-ink);color:var(--blue);border-color:var(--blue-ink)}
 .free{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ok);background:var(--okbg);padding:3px 8px;border-radius:99px}
+.ser-grade{width:34px;height:34px;border-radius:50%;border:2px solid var(--pen);color:var(--pen);display:grid;place-items:center;font-family:var(--f-pen);font-size:22px;font-weight:700;flex:none}
+.ser-spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--blue);border-top-color:transparent;animation:spin .8s linear infinite;flex:none}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -219,7 +221,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 @keyframes cube{from{transform:rotateX(-30deg) rotateY(0)}to{transform:rotateX(-30deg) rotateY(405deg)}}
 .intro p{margin:0;font-family:var(--f-display);font-weight:700;letter-spacing:.32em;font-size:14px;opacity:0;animation:fade .6s .7s forwards}
 @keyframes fade{to{opacity:1}}
-@media (prefers-reduced-motion: reduce){.cube,.beam,.step.now i{animation:none}.intro p{opacity:1;animation:none}}
+@media (prefers-reduced-motion: reduce){.cube,.beam,.step.now i,.ser-spin{animation:none}.intro p{opacity:1;animation:none}}
 </style>
 
 <div class="intro" id="intro" aria-hidden="true"><div class="cube"><span></span><span></span><span></span><span></span><span></span><span></span></div><p>CUBE MOBILE APPS</p></div>
@@ -268,7 +270,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
     <div class="panel" id="lastPanel" hidden>
       <div class="row">
-        <div class="grow"><div class="label">Ostatni skan</div><div style="font-weight:600" id="lastInfo"></div></div>
+        <div class="grow"><div class="label" id="lastLabel">Ostatni skan</div><div style="font-weight:600" id="lastInfo"></div></div>
         <button class="btn" id="lastOpen">Pokaż</button>
       </div>
     </div>
@@ -280,7 +282,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
     <div class="privacy">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <div>Zdjęcia nie trafiają do galerii ani do pamięci telefonu. Ostatni skan jest trzymany tylko chwilowo w pamięci aplikacji i znika po kolejnym skanie, po zamknięciu aplikacji albo po 10 minutach w tle. <button class="link" id="wipeNow">Usuń teraz</button></div>
+      <div>Zdjęcia nie trafiają do galerii ani do pamięci telefonu. Zdjęcia bieżącej serii są tylko w pamięci aplikacji i znikają po zakończeniu serii, po zamknięciu aplikacji albo po 10 minutach w tle. <button class="link" id="wipeNow">Usuń teraz</button></div>
     </div>
 
     <button class="link small" id="demoBtn" style="align-self:center">Zobacz przykład sprawdzonej kartkówki</button>
@@ -320,7 +322,24 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="sheet-wrap" id="sheets"></div>
     <div class="section-title"><h3>Zadania</h3><span class="small muted">Stuknij − / + aby poprawić punkty</span></div>
     <div class="tasks" id="tasks"></div>
-    <div class="bar"><button class="btn" id="resDone">Gotowe</button><button class="btn primary" id="resNext">Następna praca</button></div>
+    <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext">Następna praca</button></div>
+  </section>
+
+  <!-- SERIES -->
+  <section class="view" id="v-series" hidden>
+    <div class="top"><button class="icon-btn" id="serHome" aria-label="Wróć">←</button><span class="label">Seria prac</span><span style="width:40px"></span></div>
+    <div class="panel">
+      <div><h2 id="serCount" style="font-size:28px">0 prac</h2><div class="muted small" id="serStat"></div></div>
+      <div class="chips" id="serGrades"></div>
+    </div>
+    <p class="small muted" style="margin:0">Skanuj kolejne prace bez czekania. Sprawdzanie trwa w tle, a wyniki pojawiają się na liście. Stuknij pracę, żeby zobaczyć szczegóły.</p>
+    <div class="list" id="serList"></div>
+    <button class="link small" id="serEnd" style="align-self:center;color:var(--pen)">Zakończ serię i usuń zdjęcia</button>
+    <div class="panel" id="serConfirm" hidden>
+      <div class="small">Zakończyć serię? Zdjęcia i wyniki tej serii zostaną usunięte z pamięci.</div>
+      <div class="row"><button class="btn grow" id="serNo">Anuluj</button><button class="btn grow danger" id="serYes">Zakończ</button></div>
+    </div>
+    <div class="bar"><button class="btn primary" id="serNext"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Skanuj następną pracę</button></div>
   </section>
 
   <!-- KEY RESULT -->
@@ -497,7 +516,7 @@ const serverAI={
     if(res.status===413)throw{code:"image_rejected"};
     if(!res.ok){let e="";try{e=(await res.json()).error||""}catch(x){}throw{code:["no_key","no_credits","bad_key","bad_model"].includes(e)?e:"upstream_error"}}
     const d=await res.json();
-    S.cost+=+d.costPLN||0;
+    if(opt.costSink)opt.costSink.v+=+d.costPLN||0;
     return parseJSON(d.text||"");
   },
   async limits(){return{images:{maxCount:4}}}
@@ -513,7 +532,7 @@ $("#changeCode").onclick=()=>askCode(false);
 })();
 
 /* ---------- views ---------- */
-const views=["home","capture","work","result","key","plan","more","doc"];
+const views=["home","capture","work","result","key","plan","more","doc","series"];
 const TABS=["home","plan","more"];
 function show(v){
   views.forEach(n=>$("#v-"+n).hidden=n!==v);$("#v-"+v).scrollTop=0;
@@ -540,7 +559,7 @@ const ART={
 const SLIDES=[
  {art:"scan",h:"Zrób zdjęcie pracy",p:"Kartkówka, sprawdzian, dowolny układ. Bez specjalnych arkuszy i drukowania."},
  {art:"grade",h:"Punkty i ocena w kilka sekund",p:"Aplikacja czyta pismo uczniów, liczy punkty i wskazuje miejsca, na które warto spojrzeć."},
- {art:"safe",h:"Prywatność uczniów na pierwszym miejscu",p:"Zdjęcia nie trafiają do galerii ani do pamięci telefonu. Znikają zaraz po sprawdzeniu."}
+ {art:"safe",h:"Prywatność uczniów na pierwszym miejscu",p:"Zdjęcia nie trafiają do galerii ani do pamięci telefonu. Znikają po zakończeniu sprawdzania."}
 ];
 let onbI=0;
 function onbRender(){
@@ -578,12 +597,15 @@ function renderHome(){
   $("#keyBtn").textContent=k?"Zmień wzór":"Zeskanuj wzór";
   document.querySelectorAll("[data-pg]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.pg===S.pagesPer));
   $("#keyClear").hidden=!k;
-  $("#lastPanel").hidden=!S.last;
-  if(S.last){const r=calc(S.last);$("#lastInfo").textContent=`${fmt(r.pts)} / ${fmt(r.max)} pkt · ocena ${r.grade.g}${S.last.demo?" (przykład)":""}`}
+  const nj=S.jobs?S.jobs.length:0;
+  $("#lastPanel").hidden=!nj&&!S.last;$("#lastLabel").textContent=nj?"Bieżąca seria":"Ostatni skan";
+  if(nj){const p=pendingCount();$("#lastInfo").textContent=`${nj} ${nj===1?"praca":"prac"}${p?` · w toku: ${p}`:" · wszystkie sprawdzone"}`}
+  else if(S.last){const r=calc(S.last);$("#lastInfo").textContent=`${fmt(r.pts)} / ${fmt(r.max)} pkt · ocena ${r.grade.g}${S.last.demo?" (przykład)":""}`}
 }
 
 /* ---------- privacy: memory only ---------- */
 function wipe(){
+  if(S.jobs){S.jobs.forEach(j=>{try{j.ctl.abort()}catch(e){}j.pages.forEach(p=>URL.revokeObjectURL(p.url))});S.jobs.length=0;clearInterval(serTimer)}
   if(S.last){S.last.pages.forEach(p=>p.url&&URL.revokeObjectURL(p.url));S.last=null}
   S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
 }
@@ -614,10 +636,10 @@ async function prep(file){
     return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(),"image/jpeg",.86));
   }finally{URL.revokeObjectURL(u)}
 }
-function canScan(){return S.pro||S.used<FREE}
+function canScan(){return S.pro||S.used+(S.jobs?pendingCount():0)<FREE}
 $("#scanBtn").onclick=()=>{
   if(!canScan()){openPay(true);return}
-  S.mode="student";wipe();renderHome();openCamera();
+  S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera();
 };
 $("#keyBtn").onclick=()=>{S.mode="key";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()};
 $("#keyClear").onclick=()=>{S.key=null;ls.set("key",null);renderHome();toast("Wzór usunięty")};
@@ -740,29 +762,69 @@ function renderKey(){
 $("#keySave").onclick=()=>{S.key=S.draftKey;S.draftKey=null;ls.set("key",S.key);S.pagesPer=Math.min(4,S.key.pages||1);ls.set("pagesPer",S.pagesPer);show("home");renderHome();toast("Wzór zapisany. Skanuj prace uczniów.")};
 $("#keyRetake").onclick=()=>{S.draftKey=null;S.mode="key";openCamera()};
 
-/* ---------- grade work ---------- */
-async function gradeWork(){
+/* ---------- grade work: series queue (scan next while previous ones are graded) ---------- */
+S.jobs=[];let jobSeq=0;const PAR=3;let serTimer=null;
+function pendingCount(){return S.jobs.filter(j=>j.status==="queue"||j.status==="work").length}
+function gradeWork(){
   if(!S.sample){toast("Odczyt pisma działa w aplikacji Claude.");return}
   if(!canScan()){openPay(true);return}
-  working("Sprawdzam pracę…",["Prostuję i wyostrzam zdjęcie","Odczytuję pismo ucznia","Porównuję z odpowiedziami","Sprawdzam wątpliwe miejsca z bliska","Liczę punkty i ocenę"]);
-  S.ctl=new AbortController();S.cost=0;
+  const job={id:++jobSeq,n:S.jobs.length+1,pages:S.pages,status:"queue",res:null,err:"",ctl:new AbortController(),t0:Date.now(),sec:0};
+  S.pages=[];S.jobs.push(job);pump();renderSeries();show("series");
+}
+function pump(){
+  while(S.jobs.filter(j=>j.status==="work").length<PAR){const j=S.jobs.find(j=>j.status==="queue");if(!j)break;runJob(j)}
+  clearInterval(serTimer);if(pendingCount())serTimer=setInterval(()=>{if(!$("#v-series").hidden)renderSeries()},1000);
+}
+async function runJob(job){
+  job.status="work";job.t0=Date.now();renderSeries();
+  const sink={v:0},pages=job.pages;
   try{
-    const r=await S.sample.json(studentPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.first,cache:false});
+    const r=await S.sample.json(studentPrompt(pages.length),{images:pages.map(p=>p.blob),signal:job.ctl.signal,modelTier:S.first,cache:false,costSink:sink});
     if(!r||!Array.isArray(r.tasks))throw{code:"invalid_json"};
     const tasks=r.tasks.map(t=>{
       const max=Math.max(0,+t.max||1);let pts=Math.min(max,Math.max(0,+t.points||0));
       const st=["ok","partial","wrong","check"].includes(t.status)?t.status:"check";
       const b=Array.isArray(t.box)&&t.box.length===4?t.box.map(v=>Math.min(1,Math.max(0,+v||0))):null;
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
-      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(S.pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false};
+      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false};
     });
-    if(tasks.length){await verify(tasks,S.ctl.signal,S.first,false);if(S.precise)await verify(tasks,S.ctl.signal,"complex",true)}
-    S.last={pages:S.pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?S.cost:null};
-    S.pages=[];
+    if(tasks.length){await verify(tasks,job.ctl.signal,S.first,false,pages,sink);if(S.precise)await verify(tasks,job.ctl.signal,"complex",true,pages,sink)}
+    job.res={n:job.n,pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?sink.v:null};
+    job.status=tasks.length?"done":"error";if(!tasks.length)job.err="Nie znaleziono zadań na zdjęciu.";
+    job.sec=Math.round((Date.now()-job.t0)/1000);
     if(tasks.length){S.used++;ls.set("used",S.used)}
-    renderResult();show("result");
-  }catch(e){const m=errText(e);if(m)toast(m);show("capture")}
-  finally{clearTimeout(stepTimer)}
+    try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}
+  }catch(e){
+    if(e&&e.code==="cancelled")job.status="cancel";
+    else{job.status="error";job.err=errText(e)||"Coś przerwało sprawdzanie."}
+  }
+  renderSeries();if(!$("#v-home").hidden)renderHome();pump();
+}
+function renderSeries(){
+  const done=S.jobs.filter(j=>j.status==="done"),pend=pendingCount();
+  $("#serCount").textContent=`${S.jobs.length} ${S.jobs.length===1?"praca":(S.jobs.length%10>=2&&S.jobs.length%10<=4&&(S.jobs.length%100<10||S.jobs.length%100>=20))?"prace":"prac"}`;
+  const stats=done.map(j=>calc(j.res));
+  const avg=stats.length?Math.round(stats.reduce((a,r)=>a+r.pct,0)/stats.length):null;
+  const avgSec=done.length?Math.round(done.reduce((a,j)=>a+j.sec,0)/done.length):null;
+  $("#serStat").textContent=[pend?`w toku: ${pend}`:"wszystkie sprawdzone",avg!=null?`średnio ${avg}%`:"",avgSec!=null?`ok. ${avgSec} s na pracę`:""].filter(Boolean).join(" · ");
+  const dist={};stats.forEach(r=>dist[r.grade.g]=(dist[r.grade.g]||0)+1);
+  $("#serGrades").innerHTML=Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="chip ${+g>=3?"ok":+g===2?"chk":"bad"}">ocena ${esc(g)}: ${dist[g]}</span>`).join("");
+  const list=$("#serList");list.innerHTML="";
+  [...S.jobs].reverse().forEach(j=>{
+    const b=document.createElement("button");b.className="li";
+    let right="";
+    if(j.status==="done"){const r=calc(j.res),c=j.res.tasks.filter(t=>stat(t)==="check").length;
+      right=`<span class="small" style="font-variant-numeric:tabular-nums">${fmt(r.pts)}/${fmt(r.max)}</span>${c?`<span class="chip chk">? ${c}</span>`:""}<span class="ser-grade">${esc(r.grade.g)}</span>`}
+    else if(j.status==="work"||j.status==="queue")right=`<span class="small muted">${j.status==="queue"?"w kolejce":`sprawdzam… ${Math.round((Date.now()-j.t0)/1000)} s`}</span><i class="ser-spin"></i>`;
+    else if(j.status==="cancel")right=`<span class="small muted">przerwano</span>`;
+    else right=`<span class="small" style="color:var(--pen)">błąd · ponów</span>`;
+    b.innerHTML=`<span class="ic" style="font-weight:700">${j.n}</span><span class="grow" style="min-width:0"><b>Praca ${j.n}</b>${j.status==="error"?`<br><span class="small muted">${esc(j.err)}</span>`:""}</span>${right}`;
+    b.onclick=()=>{
+      if(j.status==="done"){S.last=j.res;renderResult();show("result")}
+      else if(j.status==="error"||j.status==="cancel"){j.status="queue";j.err="";j.ctl=new AbortController();pump();renderSeries()}
+    };
+    list.appendChild(b);
+  });
 }
 
 /* ---------- precise mode: second look at close-up crops ---------- */
@@ -781,12 +843,12 @@ async function crop(blob,box){
   }finally{bmp.close&&bmp.close()}
 }
 const norm=s=>String(s||"").toLowerCase().replace(/[\s.,;:!?()„”"'«»-]+/g," ").trim();
-async function verify(tasks,signal,tier,onlyCheck){
+async function verify(tasks,signal,tier,onlyCheck,pages,sink){
   const rank=t=>t.status==="check"?0:onlyCheck?9:t.conf<0.9?1:(t.status==="wrong"||t.status==="partial")?2:9;
   const pick=tasks.map((t,i)=>({t,i,r:rank(t)})).filter(o=>o.r<9&&o.t.box).sort((a,b)=>a.r-b.r).slice(0,onlyCheck?3:S.maxImg);
   if(!pick.length)return;
   const imgs=[];
-  for(const o of pick)imgs.push(await crop(S.pages[o.t.page-1].blob,o.t.box));
+  for(const o of pick)imgs.push(await crop(pages[o.t.page-1].blob,o.t.box));
   const keyOf=nr=>S.key?S.key.tasks.find(k=>norm(k.nr)===norm(nr)):null;
   const list=pick.map((o,j)=>{const k=keyOf(o.t.nr);return `Image ${j+1} → task "${o.t.nr}" (type ${o.t.type||"?"}, max ${o.t.max} pts). Expected answer: ${JSON.stringify(k?k.answer:o.t.correct)}${k&&k.question?` (question: ${JSON.stringify(k.question)})`:""}.`}).join("\n");
   const prompt=`You are double-checking automatic grading of a student's handwritten test. Each image is a CLOSE-UP crop of one task's answer area (crop may include neighbouring lines; focus on the named task).
@@ -798,7 +860,7 @@ Then score it against the expected answer (half points allowed for open answers)
 Never output the student's name.
 Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"image":1,"answer":"...","points":1,"status":"ok","confidence":0.95,"reason":""}]}`;
   let r;
-  try{r=await S.sample.json(prompt,{images:imgs,signal,modelTier:tier,cache:false})}
+  try{r=await S.sample.json(prompt,{images:imgs,signal,modelTier:tier,cache:false,costSink:sink})}
   catch(e){if(e&&e.code==="cancelled")throw e;return}
   if(!r||!Array.isArray(r.tasks))return;
   r.tasks.forEach(v=>{
@@ -828,7 +890,7 @@ function stat(t){return t.status==="check"&&!t.resolved?"check":t.points>=t.max?
 
 function renderResult(){
   const sc=S.last,r=calc(sc);
-  $("#resLabel").textContent=sc.demo?"Przykład":"Wynik";
+  $("#resLabel").textContent=sc.demo?"Przykład":sc.n?`Praca ${sc.n}`:"Wynik";
   $("#gradeRing").textContent=r.grade.g;
   $("#ptsText").textContent=`${fmt(r.pts)} / ${fmt(r.max)} pkt`;
   $("#pctText").textContent=`${r.pct}% · ${r.grade.n}`;
@@ -872,13 +934,18 @@ function renderResult(){
     box.appendChild(d);
   });
 }
-$("#resHome").onclick=$("#resDone").onclick=()=>{show("home");renderHome()};
+$("#resHome").onclick=$("#resDone").onclick=()=>{if(S.jobs.length&&!S.last.demo){renderSeries();show("series")}else{show("home");renderHome()}};
 $("#resNext").onclick=()=>{
-  wipe();
   if(!canScan()){show("home");renderHome();openPay(true);return}
-  S.mode="student";show("home");renderHome();openCamera();
+  if(S.last&&S.last.demo){wipe()}
+  S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera();
 };
-$("#lastOpen").onclick=()=>{if(S.last){renderResult();show("result")}};
+$("#lastOpen").onclick=()=>{if(S.jobs.length){renderSeries();show("series")}else if(S.last){renderResult();show("result")}};
+$("#serNext").onclick=()=>{if(!canScan()){openPay(true);return}S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()};
+$("#serHome").onclick=()=>{show("home");renderHome()};
+$("#serEnd").onclick=()=>{$("#serConfirm").hidden=false};
+$("#serNo").onclick=()=>{$("#serConfirm").hidden=true};
+$("#serYes").onclick=()=>{$("#serConfirm").hidden=true;wipe();show("home");renderHome();toast("Seria zakończona, zdjęcia usunięte")};
 
 /* ---------- paywall ---------- */
 let plan="y";
@@ -929,7 +996,7 @@ privacy:{t:"Polityka prywatności",l:"Wersja z 25.10.2026",b:`
 <li>Do sprawdzenia zdjęcie jest wysyłane szyfrowanym połączeniem do naszego serwera, a stamtąd do dostawcy usługi rozpoznawania pisma (Anthropic PBC, USA). Nie zapisujemy zdjęć na naszym serwerze.</li>
 <li>Dostawca nie wykorzystuje przesłanych zdjęć do trenowania modeli. Przekazanie danych poza EOG odbywa się na podstawie ${F("[standardowych klauzul umownych / Data Privacy Framework]")}. Okres przechowywania u dostawcy: ${F("[uzupełnić zgodnie z umową z dostawcą]")}.</li>
 <li>Aplikacja nie zwraca i nie zapisuje imion i nazwisk uczniów. Wynik (punkty i ocena) istnieje tylko na ekranie.</li>
-<li>Ostatni skan jest usuwany z pamięci po kolejnym skanie, po zamknięciu aplikacji, po 10 minutach w tle albo po wybraniu „Usuń teraz”.</li>
+<li>Zdjęcia bieżącej serii prac są usuwane z pamięci po zakończeniu serii, po zamknięciu aplikacji, po 10 minutach w tle albo po wybraniu „Usuń teraz”.</li>
 </ul>
 <h3>3. Dane nauczyciela</h3>
 <p>Nie wymagamy zakładania konta. Na urządzeniu zapisujemy tylko ustawienia: skalę ocen, wzór odpowiedzi, motyw i licznik darmowych skanów. Usuniesz je w zakładce Więcej.</p>
