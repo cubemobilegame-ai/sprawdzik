@@ -198,6 +198,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .pts{display:flex;align-items:center;gap:8px}
 .pt{min-width:54px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
 .pt.on{border-color:var(--blue);background:var(--blue);color:var(--blue-ink)}
+.pt.sug{border-color:var(--blue);border-style:dashed}
 .sum{display:flex;flex-direction:column;gap:4px;font-size:15px;padding:2px 2px 4px}
 .okc{color:var(--ok)}.badc{color:var(--pen)}.halfc{color:var(--warn)}
 .fix.col{flex-direction:column;align-items:flex-start;gap:4px}
@@ -911,7 +912,9 @@ Rules:
 - "box": [x, y, w, h] around the student's answer for that task, as fractions 0..1 of that page's width and height; "page": page number (1-based).
 - For every task with status "check" ALSO give: "doubt": one of "illegible" (handwriting hard to read), "two_marks" (more than one option marked or unclear final choice), "line" (unclear matching line), "content" (reading is clear, grading of the content is uncertain), "other"; "question": one very short question in Polish for the teacher, max 7 words, answerable at a glance (e.g. "Czy nad „a” jest akcent?", "Które zakreślenie jest ostateczne: B czy C?", "Czy odpowiedź zawiera uzasadnienie?"); "options": 2–3 choices, most likely first, each {"label": Polish, max 3 words, "answer": the reading for that choice (short), "points": points that choice earns under the rules}; "spot": [x,y,w,h] tight box around the exact disputed letter, mark or line (fractions of the page).
 ${S.accents?"":"- Accents/diacritics do NOT count: never create a doubt only about a missing or unclear accent — treat the word as correct with full points."}
-- "answer": what the student actually wrote or marked (short, original language). "correct": the expected answer (short).
+- "answer": EXACT transcription of what the student wrote or marked, in the sheet's language. NO comments, NO descriptions, NO translations, NO English words that are not on the sheet. Put any remark in "reason" instead. "correct": the expected answer (short).
+- Self-corrections: if the student crossed out an answer and wrote another one (next to it, above it or in the margin), the new one is the final answer — grade it, do not mark the crossed-out word as an error.
+- Tasks with several blanks or numbered sub-answers (e.g. (1)…(9)): keep it ONE task, but add "items" listing ONLY the sub-answers that are wrong or doubtful: [{"n":"(4)","answer":"what student wrote","correct":"expected"}]. Do not list correct sub-answers. In that case set "answer" to "" and "correct" to "".
 - NEVER output the student's name, class or any personal data.
 - Keep output short: minified JSON (no spaces or newlines), "answer" under 60 characters, box values with 2 decimals${S.key?', omit "correct" (the key is known)':''}.
 - "quality": "ok", "blurry", "dark", "cut" (part of the page missing) or "not_test". If not ok, add "quality_note" in Polish, max 14 words.
@@ -974,7 +977,7 @@ async function runJob(job){
       const st=["ok","partial","wrong","check"].includes(t.status)?t.status:"check";
       const b=Array.isArray(t.box)&&t.box.length===4?t.box.map(v=>Math.min(1,Math.max(0,+v||0))):null;
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
-      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),options:cleanOptions(t.options,max),spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
+      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),options:cleanOptions(t.options,max),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50)})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
     });
     tasks.forEach(applyRules);
     job.res={n:job.n,pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?sink.v:null};
@@ -1055,6 +1058,7 @@ async function verify(tasks,signal,tier,which,pages,sink){
   const prompt=`You are double-checking automatic grading of a student's handwritten test. Each image is a CLOSE-UP crop of one task's answer area (crop may include neighbouring lines; focus on the named task).
 ${list}
 ${contextRules()}
+"answer" must be the EXACT transcription only (no comments, no translations). A crossed-out answer replaced by another one: the replacement is final.
 For each image, read the student's answer again INDEPENDENTLY, letter by letter, as if seeing it for the first time. Consider ambiguous letters carefully, crossed-out text, which option is circled, where each drawn line ends.
 ${S.spell?"Spelling mistakes cost the point in fill-in tasks.":"Ignore spelling mistakes for scoring (mention them in reason)."}
 Then score it against the expected answer (half points allowed for open answers).
@@ -1124,10 +1128,15 @@ function diffPairs(a,c){
   return out;
 }
 function fixHtml(t){
+  if(t.items&&t.items.length){
+    const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
+    const its=t.items.filter(x=>!eqI(x.answer,x.correct));
+    if(its.length)return `<div class="fix col">${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">brak</span>`,`<span class="goodh">${esc(x.correct)}</span>`];return `<div class="fixrow">${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}).join("")}${its.length>5?`<div class="small muted">i jeszcze ${its.length-5}</div>`:""}</div>`;
+  }
   const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
   if(c){
     const pairs=diffPairs(t.answer,c);
-    if(pairs){
+    if(pairs&&pairs.length<=5&&pairs.every(([w,r])=>w.length<=40&&r.length<=40)){
       const rows=pairs.slice(0,4).map(([w,r])=>{if(w&&r){const [a,b]=markPair(w,r);return `<div class="fixrow"><span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}return w?`<div class="fixrow"><span class="hand"><span class="badu">${esc(w)}</span></span><span class="small muted">zbędne</span></div>`:`<div class="fixrow"><span class="small muted">brak</span><span class="arr">→</span><b><span class="goodh">${esc(r)}</span></b></div>`}).join("");
       return `<div class="fix col">${rows}${pairs.length>4?`<div class="small muted">i jeszcze ${pairs.length-4}</div>`:""}</div>`;
     }
@@ -1136,12 +1145,14 @@ function fixHtml(t){
   return `<div class="fix"><span class="small warnc">${esc(t.question||t.reason||"Sprawdź odpowiedź")}</span></div>`;
 }
 function ptsHtml(t){const v=[0];if(t.max>=1&&t.max%1===0&&t.max<=3)for(let k=1;k<=t.max;k++)v.push(k);else{if(t.max>=1)v.push(Math.round(t.max)/2);v.push(t.max)}
-  return [...new Set(v)].map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}" data-p="${p}">${fmt(p)}</button>`).join("")+`<span class="small muted">pkt</span>`}
+  if(!t.resolved)v.push(t.points);
+  return [...new Set(v)].sort((x,y)=>x-y).map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}${!t.resolved&&t.points===p?" sug":""}" data-p="${p}">${fmt(p)}</button>`).join("")+`<span class="small muted">pkt</span>`}
 function lineHtml(t,s){const wrongish=s!=="ok"&&t.correct&&norm(t.correct)!==norm(t.answer);return `<div class="line1"><span class="hand">${esc(t.answer||"—")}</span>${wrongish?`<span class="muted small">→ powinno być</span><b>${esc(t.correct)}</b>`:""}</div>`}
 function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer=o.answer;t.choice=i;t.resolved=true}
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
 const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/[\s.,;:!?()„”"'«»¿¡-]+/g," ").trim();
 function applyRules(t){
+  if(!S.accents&&t.items&&t.items.length&&t.points<t.max&&t.items.every(x=>x.answer&&x.correct&&strip(x.answer)===strip(x.correct))){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
   if(!S.accents){
     if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
     if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>o.answer)&&new Set(t.options.map(o=>norm(o.answer))).size>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
