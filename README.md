@@ -14,6 +14,7 @@ Aplikacja dla nauczycieli: skan pracy aparatem, automatyczne sprawdzanie przez C
 | `APP_CODE` | dowolny kod, np. `4821` – aplikacja poprosi o niego przy pierwszym uruchomieniu |
 | `MODEL_FAST` (opcjonalnie) | domyślnie `claude-haiku-5-5` |
 | `MODEL_PRECISE` (opcjonalnie) | domyślnie `claude-sonnet-5-5` |
+| `COST_MODE` (opcjonalnie) | `balanced` (domyślnie): Haiku czyta prace, Sonnet tylko wzory i wycinki wątpliwych zadań · `eco`: zawsze Haiku · `precise`: Sonnet może czytać całe prace |
 | `USD_PLN` (opcjonalnie) | kurs do liczenia kosztu, domyślnie `3.7` |
 
 Po dodaniu lub zmianie zmiennych zrób Redeploy.

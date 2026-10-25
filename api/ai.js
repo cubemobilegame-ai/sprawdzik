@@ -36,7 +36,16 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: "too_large" });
   }
 
-  const model = tier === "complex" ? MODELS.precise : MODELS.fast;
+  // Kontrola kosztów (ustawiana w Vercel → Environment Variables, aplikacja nie może jej obejść):
+  // COST_MODE=eco      – zawsze tani model (Haiku)
+  // COST_MODE=balanced – (domyślnie) Haiku czyta prace; Sonnet tylko do wzorów i wycinków wątpliwych zadań
+  // COST_MODE=precise  – pozwala aplikacji używać Sonnetu także do pierwszego odczytu
+  const mode = (process.env.COST_MODE || "balanced").toLowerCase();
+  const { purpose = "read" } = req.body || {};
+  let wantPrecise = tier === "complex";
+  if (mode === "eco") wantPrecise = false;
+  else if (mode !== "precise" && purpose === "read") wantPrecise = false;
+  const model = wantPrecise ? MODELS.precise : MODELS.fast;
   const content = [
     ...images.map((data) => ({
       type: "image",

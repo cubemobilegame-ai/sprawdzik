@@ -520,7 +520,7 @@ const $=s=>document.querySelector(s);
 const FREE=30;
 const DEFAULT_SCALE=[{g:"6",n:"celujący",min:96},{g:"5",n:"bardzo dobry",min:86},{g:"4",n:"dobry",min:71},{g:"3",n:"dostateczny",min:51},{g:"2",n:"dopuszczający",min:31},{g:"1",n:"niedostateczny",min:0}];
 const ls={get(k,d){try{const v=localStorage.getItem("spr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("spr_"+k,JSON.stringify(v))}catch(e){}}};
-const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","complex"),spell:ls.get("spell",false),
+const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","default"),spell:ls.get("spell",false),
   mode:"student",pagesPer:ls.get("pagesPer",1),pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
 
 /* ---------- intro ---------- */
@@ -534,7 +534,7 @@ intro.addEventListener("click",()=>{if(plays>=1||Date.now()-t0>1200)endIntro()})
 
 /* ---------- AI: Claude app (window.claude) or own server (/api/ai) ---------- */
 const TIERMAP={complex:"default",default:"quick"};
-const viaClaude=c=>({json:(p,o={})=>{const {costSink,...rest}=o;return c.json(p,{...rest,modelTier:TIERMAP[o.modelTier]||o.modelTier})},limits:()=>c.limits()});
+const viaClaude=c=>({json:(p,o={})=>{const {costSink,purpose,...rest}=o;return c.json(p,{...rest,modelTier:TIERMAP[o.modelTier]||o.modelTier})},limits:()=>c.limits()});
 
 S.cost=0;
 function getCode(){return ls.get("code","")}
@@ -552,7 +552,7 @@ const serverAI={
     try{imgs=await Promise.all([...(opt.images||[])].map(blobToB64))}catch(e){throw{code:"image_rejected"}}
     let res;
     try{
-      res=await fetch("/api/ai",{method:"POST",signal:opt.signal,headers:{"content-type":"application/json","x-app-code":getCode()},body:JSON.stringify({prompt,images:imgs,tier:opt.modelTier||"default"})});
+      res=await fetch("/api/ai",{method:"POST",signal:opt.signal,headers:{"content-type":"application/json","x-app-code":getCode()},body:JSON.stringify({prompt,images:imgs,tier:opt.modelTier||"default",purpose:opt.purpose||"read"})});
     }catch(e){throw{code:e&&e.name==="AbortError"?"cancelled":"upstream_error"}}
     if(res.status===401){askCode(true);throw{code:"bad_code"}}
     if(res.status===429)throw{code:"rate_limited"};
@@ -882,7 +882,7 @@ async function readKey(){
   working("Czytam wzór odpowiedzi…",["Prostuję i wyostrzam zdjęcie","Odczytuję zadania","Zapisuję poprawne odpowiedzi"]);
   S.ctl=new AbortController();
   try{
-    const r=await S.sample.json(keyPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.precise?"complex":"default",cache:false});
+    const r=await S.sample.json(keyPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.precise?"complex":"default",cache:false,purpose:"key"});
     if(!r||!Array.isArray(r.tasks)||!r.tasks.length)throw{code:"invalid_json"};
     S.draftKey={pages:S.pages.length,subject:SUBJECTS.some(x=>x[0]===r.subject)?r.subject:"auto",lang:LANG_EN[r.language]?r.language:"auto",title:String(r.title||""),tasks:r.tasks.map(t=>({nr:String(t.nr??""),type:String(t.type||"other"),question:String(t.question||""),answer:String(t.answer||""),max:Math.max(0.5,+t.max||1)}))};
     S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
@@ -924,7 +924,7 @@ async function runJob(job){
   job.status="work";job.t0=Date.now();renderSeries();
   const sink={v:0},pages=job.pages;
   try{
-    const r=await S.sample.json(studentPrompt(pages.length),{images:pages.map(p=>p.blob),signal:job.ctl.signal,modelTier:S.first,cache:false,costSink:sink});
+    const r=await S.sample.json(studentPrompt(pages.length),{images:pages.map(p=>p.blob),signal:job.ctl.signal,modelTier:S.first,cache:false,costSink:sink,purpose:"read"});
     if(!r||!Array.isArray(r.tasks))throw{code:"invalid_json"};
     const tasks=r.tasks.map(t=>{
       const max=Math.max(0,+t.max||1);let pts=Math.min(max,Math.max(0,+t.points||0));
@@ -1009,7 +1009,7 @@ Then score it against the expected answer (half points allowed for open answers)
 Never output the student's name.
 Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"image":1,"answer":"...","points":1,"status":"ok","confidence":0.95,"reason":""}]}`;
   let r;
-  try{r=await S.sample.json(prompt,{images:imgs,signal,modelTier:tier,cache:false,costSink:sink})}
+  try{r=await S.sample.json(prompt,{images:imgs,signal,modelTier:tier,cache:false,costSink:sink,purpose:"verify"})}
   catch(e){if(e&&e.code==="cancelled")throw e;return}
   if(!r||!Array.isArray(r.tasks))return;
   r.tasks.forEach(v=>{
