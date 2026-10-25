@@ -156,6 +156,11 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .switch input{width:46px;height:28px;accent-color:var(--blue)}
 .toast{position:absolute;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:30;max-width:88%;text-align:center}
 
+.pgsel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.pgsel span{grid-column:1/-1;font-size:14px;opacity:.85}
+.pgsel button{min-width:0;height:40px;border-radius:12px;font-weight:700;border:1.5px solid color-mix(in srgb,var(--blue-ink) 45%,transparent);color:var(--blue-ink)}
+.pgsel button[aria-pressed="true"]{background:var(--blue-ink);color:var(--blue);border-color:var(--blue-ink)}
+.free{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ok);background:var(--okbg);padding:3px 8px;border-radius:99px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -243,6 +248,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="scan-hero">
       <h2>Skanuj pracę ucznia</h2>
       <p>Zrób zdjęcie kartkówki lub sprawdzianu. Aplikacja odczyta odpowiedzi, policzy punkty i wystawi ocenę.</p>
+      <div class="pgsel" role="group" aria-label="Liczba stron w jednej pracy"><span>Stron w pracy:</span><button data-pg="1">1</button><button data-pg="2">2</button><button data-pg="3">3</button><button data-pg="4">4</button></div>
       <button class="btn" id="scanBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Otwórz aparat</button>
     </div>
 
@@ -255,7 +261,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
         </div>
       </div>
       <div class="row" style="flex-wrap:wrap">
-        <button class="btn grow" id="keyBtn">Zeskanuj wzór</button>
+        <button class="btn grow" id="keyBtn">Zeskanuj wzór</button><span class="free">BEZPŁATNIE</span>
         <button class="btn ghost danger" id="keyClear" hidden>Usuń wzór</button>
       </div>
     </div>
@@ -459,7 +465,7 @@ const FREE=30;
 const DEFAULT_SCALE=[{g:"6",n:"celujący",min:96},{g:"5",n:"bardzo dobry",min:86},{g:"4",n:"dobry",min:71},{g:"3",n:"dostateczny",min:51},{g:"2",n:"dopuszczający",min:31},{g:"1",n:"niedostateczny",min:0}];
 const ls={get(k,d){try{const v=localStorage.getItem("spr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("spr_"+k,JSON.stringify(v))}catch(e){}}};
 const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),first:ls.get("first","complex"),spell:ls.get("spell",false),
-  mode:"student",pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
+  mode:"student",pagesPer:ls.get("pagesPer",1),pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
 
 /* ---------- intro ---------- */
 const intro=$("#intro");
@@ -568,8 +574,9 @@ function renderHome(){
   const k=S.key;
   $("#keyDot").classList.toggle("on",!!k);
   $("#keyTitle").textContent=k?`Wzór: ${k.title||"sprawdzian"}`:"Bez wzoru odpowiedzi";
-  $("#keyDesc").textContent=k?`${k.tasks.length} zadań · ${fmt(k.tasks.reduce((a,t)=>a+(+t.max||0),0))} pkt. Każda praca jest porównywana z tym wzorem.`:"Aplikacja sama oceni poprawność. Dla największej pewności zeskanuj najpierw swój wzór (klucz) z poprawnymi odpowiedziami.";
+  $("#keyDesc").textContent=k?`${k.tasks.length} zadań · ${fmt(k.tasks.reduce((a,t)=>a+(+t.max||0),0))} pkt · stron: ${k.pages||1}. Każda praca jest porównywana z tym wzorem.`:"Aplikacja sama oceni poprawność. Dla największej pewności zeskanuj najpierw swój wzór (klucz) z poprawnymi odpowiedziami.";
   $("#keyBtn").textContent=k?"Zmień wzór":"Zeskanuj wzór";
+  document.querySelectorAll("[data-pg]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.pg===S.pagesPer));
   $("#keyClear").hidden=!k;
   $("#lastPanel").hidden=!S.last;
   if(S.last){const r=calc(S.last);$("#lastInfo").textContent=`${fmt(r.pts)} / ${fmt(r.max)} pkt · ocena ${r.grade.g}${S.last.demo?" (przykład)":""}`}
@@ -591,7 +598,9 @@ const cam=$("#cam");
 function openCamera(){cam.value="";cam.click()}
 cam.onchange=async()=>{
   const f=cam.files&&cam.files[0];if(!f)return;
-  try{const blob=await prep(f);S.pages.push({blob,url:URL.createObjectURL(blob)});renderCapture();show("capture")}
+  try{const blob=await prep(f);S.pages.push({blob,url:URL.createObjectURL(blob)});
+    if(S.mode==="student"&&S.pages.length>=S.pagesPer&&S.sample){cam.value="";gradeWork();return}
+    renderCapture();show("capture")}
   catch(e){toast("Nie udało się odczytać zdjęcia. Spróbuj ponownie.")}
   cam.value="";
 };
@@ -616,7 +625,9 @@ $("#keyClear").onclick=()=>{S.key=null;ls.set("key",null);renderHome();toast("Wz
 function renderCapture(){
   const limit=S.maxImg-(S.mode==="student"&&S.key?0:0);
   $("#capTitle").textContent=S.mode==="key"?"Wzór odpowiedzi":"Praca ucznia";
-  $("#capHint").textContent=S.mode==="key"?"Sfotografuj kartkę z poprawnymi odpowiedziami. Wszystkie strony wzoru dodaj tutaj.":"Sprawdzian ma kilka stron? Dodaj je wszystkie, zanim zaczniesz sprawdzanie.";
+  const need=S.mode==="student"&&S.pages.length<S.pagesPer;
+  $("#capTitle").textContent=S.mode==="key"?"Wzór odpowiedzi":need?`Strona ${S.pages.length+1} z ${S.pagesPer}`:"Praca ucznia";
+  $("#capHint").textContent=S.mode==="key"?"Sfotografuj wszystkie strony wzoru z poprawnymi odpowiedziami. Odczyt wzoru jest bezpłatny.":need?`Odwróć kartkę lub weź następną i zrób zdjęcie strony ${S.pages.length+1}. Po ostatniej stronie sprawdzanie ruszy samo.`:"Wszystkie strony gotowe. Możesz dodać kolejną albo sprawdzić pracę.";
   const t=$("#thumbs");t.innerHTML="";
   S.pages.forEach((p,i)=>{
     const d=document.createElement("div");d.className="thumb";
@@ -625,10 +636,12 @@ function renderCapture(){
     t.appendChild(d);
   });
   if(S.pages.length<limit){const a=document.createElement("button");a.className="addpage";a.innerHTML="+<br>Dodaj stronę";a.onclick=openCamera;t.appendChild(a)}
-  $("#capGo").textContent=S.mode==="key"?"Odczytaj wzór":"Sprawdź pracę";
+  $("#capGo").textContent=S.mode==="key"?"Odczytaj wzór":need?`Zrób zdjęcie strony ${S.pages.length+1}`:"Sprawdź pracę";
+  $("#capGo").dataset.next=need?"1":"";
 }
 $("#capCancel").onclick=()=>{S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];show("home");renderHome()};
-$("#capGo").onclick=()=>S.mode==="key"?readKey():gradeWork();
+$("#capGo").onclick=()=>$("#capGo").dataset.next?openCamera():S.mode==="key"?readKey():gradeWork();
+document.querySelectorAll("[data-pg]").forEach(b=>b.onclick=()=>{S.pagesPer=+b.dataset.pg;ls.set("pagesPer",S.pagesPer);renderHome()});
 
 /* ---------- working screen ---------- */
 let stepTimer;
@@ -704,7 +717,7 @@ async function readKey(){
   try{
     const r=await S.sample.json(keyPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.precise?"complex":"default",cache:false});
     if(!r||!Array.isArray(r.tasks)||!r.tasks.length)throw{code:"invalid_json"};
-    S.draftKey={title:String(r.title||""),tasks:r.tasks.map(t=>({nr:String(t.nr??""),type:String(t.type||"other"),question:String(t.question||""),answer:String(t.answer||""),max:Math.max(0.5,+t.max||1)}))};
+    S.draftKey={pages:S.pages.length,title:String(r.title||""),tasks:r.tasks.map(t=>({nr:String(t.nr??""),type:String(t.type||"other"),question:String(t.question||""),answer:String(t.answer||""),max:Math.max(0.5,+t.max||1)}))};
     S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
     renderKey();show("key");
   }catch(e){const m=errText(e);if(m)toast(m);show(S.pages.length?"capture":"home")}
@@ -724,7 +737,7 @@ function renderKey(){
     box.appendChild(d);
   });
 }
-$("#keySave").onclick=()=>{S.key=S.draftKey;S.draftKey=null;ls.set("key",S.key);show("home");renderHome();toast("Wzór zapisany. Skanuj prace uczniów.")};
+$("#keySave").onclick=()=>{S.key=S.draftKey;S.draftKey=null;ls.set("key",S.key);S.pagesPer=Math.min(4,S.key.pages||1);ls.set("pagesPer",S.pagesPer);show("home");renderHome();toast("Wzór zapisany. Skanuj prace uczniów.")};
 $("#keyRetake").onclick=()=>{S.draftKey=null;S.mode="key";openCamera()};
 
 /* ---------- grade work ---------- */
