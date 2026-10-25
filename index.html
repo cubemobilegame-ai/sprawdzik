@@ -281,6 +281,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .mk-left.zero{background:var(--okbg);color:var(--ok)}
 .mk-sec{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 #v-mark .sheet .pm{pointer-events:none}
+.gdist{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin-right:6px}
+.ser-grade.sm{width:30px;height:30px;font-size:19px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -1495,7 +1497,7 @@ function renderSeries(){
   const avgSec=done.length?Math.round(done.reduce((a,j)=>a+j.sec,0)/done.length):null;
   $("#serStat").textContent=[pend?`w toku: ${pend}`:"wszystkie sprawdzone",avg!=null?`średnio ${avg}%`:"",avgSec!=null?`ok. ${avgSec} s na pracę`:""].filter(Boolean).join(" · ");
   const dist={};stats.forEach(r=>dist[r.grade.g]=(dist[r.grade.g]||0)+1);
-  $("#serGrades").innerHTML=Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="chip ${parseInt(g)>=3?"ok":parseInt(g)===2?"chk":"bad"}">ocena ${esc(g)}: ${dist[g]}</span>`).join("");
+  $("#serGrades").innerHTML=Object.keys(dist).length?`<span class="small muted" style="align-self:center">Oceny:</span>`+Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="gdist"><span class="ser-grade sm">${esc(g)}</span>× ${dist[g]}</span>`).join(""):"";
   const nCheck=S.jobs.reduce((a,j)=>a+(j.status==="done"?j.res.tasks.filter(t=>stat(t)==="check").length:0),0);
   $("#serReview").disabled=!nCheck;
   ["#serPdf","#serMark"].forEach(s=>$(s).disabled=!done.length);renderSteps(pend,nCheck);
@@ -1774,7 +1776,7 @@ function renderResult(){
     if((s!=="ok"||t.type==="open")&&!S.showAll){
       const d=document.createElement("div");d.className="task dense"+(s==="check"?" chk":" miss");d.id="task-"+i;
       const fixed=s!=="check"&&!t.resolved;
-      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div>${fixed?`<div class="small muted zero">${fmt(t.points)} / ${fmt(t.max)} pkt · <button class="link small chg">zmień</button></div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
+      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div>${fixed?`<div class="small muted zero">${fmt(t.points)} / ${fmt(t.max)} pkt</div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
       d.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{decide(t,+b.dataset.p,sc);renderResult()});
       const cg=d.querySelector(".chg");if(cg)cg.onclick=()=>{t.resolved=true;renderResult()};
       box.appendChild(d);return;
