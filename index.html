@@ -266,6 +266,17 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .shutter::after{content:"";width:62px;height:62px;border-radius:50%;background:#fff;border:3px solid #000}
 .cam-fail{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:#fff;background:#0B0B1A;z-index:3}
 #resNext,#mkNext{white-space:nowrap;gap:6px;padding:0 10px}
+.stp{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line)}
+.stp+.stp{margin-top:8px}
+.stp .sn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;border:2px solid var(--line);color:var(--muted);flex:none}
+.stp.done .sn{background:var(--ok);border-color:var(--ok);color:#fff}
+.stp.act{border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 18%,transparent)}
+.stp.act .sn{border-color:var(--blue);color:var(--blue)}
+.stp.done b{color:var(--muted)}
+.stp b{font-size:16px}
+.stp .btn.sm{min-height:40px;flex:none}
+.rv-ctx{font-size:14px;color:var(--muted);margin-top:-8px}
+.rv-sug{font-size:14px;color:var(--muted)}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -434,9 +445,11 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
   <!-- QUICK REVIEW -->
   <section class="view" id="v-review" hidden>
-    <div class="top"><button class="icon-btn" id="rvBack" aria-label="Wróć">←</button><span class="label">Do sprawdzenia · <span id="rvProg"></span></span><span style="width:40px"></span></div>
+    <div class="top"><button class="icon-btn" id="rvBack" aria-label="Wróć">←</button><span class="label">Wątpliwość <span id="rvProg"></span></span><span style="width:40px"></span></div>
     <h2 id="rvTitle" style="font-size:22px"></h2>
+    <div class="rv-ctx" id="rvCtx"></div>
     <div class="sheet" style="background:#fff"><img id="rvImg" alt="Wycinek odpowiedzi ucznia"></div>
+    <button class="link small" id="rvWide" style="align-self:flex-start"></button>
     <div id="rvChip"></div>
     <div class="q" id="rvQ"></div>
     <div id="rvLine"></div>
@@ -458,11 +471,19 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       <div class="chips" id="serGrades"></div>
     </div>
     <div class="issues" id="issuesSer" hidden></div>
-    <p class="small muted" style="margin:0">Skanuj kolejne prace bez czekania. Sprawdzanie trwa w tle, a wyniki pojawiają się na liście. Stuknij pracę, żeby zobaczyć szczegóły.</p>
-    <button class="btn" id="serMark" style="border-color:var(--blue);color:var(--blue)">✎ Nanoś wyniki na kartki<span class="info" role="button" tabindex="0" data-info="mark" aria-label="Co to jest?">i</span></button>
-    <div class="ser-tools">
-      <button class="btn" id="serReview">Przejrzyj wątpliwości</button>
-      <button class="btn" id="serPdf">PDF z wynikami<span class="info" role="button" tabindex="0" data-info="pdf" aria-label="Co to jest?">i</span></button>
+    <div id="serScanBox" style="display:flex;flex-direction:column;gap:12px">
+      <p class="small muted" style="margin:0">Skanuj kolejne prace bez czekania – sprawdzanie trwa w tle. Gdy zeskanujesz wszystkie, stuknij „Zakończ skanowanie”.</p>
+      <button class="btn" id="serFinish" style="border-color:var(--blue);color:var(--blue)">✓ Zakończ skanowanie</button>
+      <div class="panel" id="finConfirm" hidden>
+        <div id="finTxt"></div>
+        <div class="row"><button class="btn grow" id="finNo">Wróć</button><button class="btn primary grow" id="finYes">Tak, zakończ</button></div>
+      </div>
+    </div>
+    <div id="serSteps" hidden>
+      <div class="stp" id="stp1"><span class="sn">1</span><div class="grow"><b>Skanowanie</b><div class="small muted" id="stp1t"></div></div><button class="link small" id="serMore">Dodaj pracę</button></div>
+      <div class="stp" id="stp2"><span class="sn">2</span><div class="grow"><b>Wątpliwości<span class="info" role="button" tabindex="0" data-info="review" aria-label="Co to jest?">i</span></b><div class="small muted" id="stp2t"></div></div><button class="btn sm" id="serReview">Rozstrzygnij</button></div>
+      <div class="stp" id="stp3"><span class="sn">3</span><div class="grow"><b>Nanieś wyniki na kartki<span class="info" role="button" tabindex="0" data-info="mark" aria-label="Co to jest?">i</span></b><div class="small muted" id="stp3t"></div></div><button class="btn sm" id="serMark">Zacznij</button></div>
+      <div class="stp" id="stp4"><span class="sn">4</span><div class="grow"><b>Wyniki do dziennika<span class="info" role="button" tabindex="0" data-info="pdf" aria-label="Co to jest?">i</span></b><div class="small muted" id="stp4t"></div></div><button class="btn sm" id="serPdf">PDF</button></div>
     </div>
     <div class="small muted" id="serMissing" hidden></div>
     <div class="list" id="serList"></div>
@@ -846,7 +867,7 @@ function renderMark(){
   if(S.voice&&!j.refining&&MK.spoken!==j.id){MK.spoken=j.id;speak(speechFor(j))}
 }
 function markGo(d){const L=S.jobs,i=L.indexOf(MK.job)+d;stopVoice();
-  if(i>=L.length){renderSeries();show("series");toast("Wszystkie prace naniesione");return}
+  if(i>=L.length){S.marked=true;renderSeries();show("series");toast("Wszystkie prace naniesione");return}
   if(i<0)return;MK.job=L[i];$("#v-mark").scrollTop=0;renderMark()}
 $("#mkBack").onclick=()=>{stopVoice();renderSeries();show("series")};
 $("#mkPrev").onclick=()=>{if(S.flow==="one"){stopVoice();renderSeries();show("series")}else markGo(-1)};
@@ -970,7 +991,7 @@ function removeJob(j){
 function endLive(){
   stopLive();
   if(S.pages.length){const job=gradeWork(true);if(!job){S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[]}}
-  if(S.jobs.length){renderSeries();show("series")}else{show("home");renderHome()}
+  if(S.jobs.length){renderSeries();show("series");if(!S.serDone)openFinish()}else{show("home");renderHome()}
 }
 $("#camClose").onclick=endLive;
 $("#camDone").onclick=endLive;
@@ -1068,7 +1089,7 @@ async function resultsPdf(){
 }
 async function makePdf(kind){
   const btn=$("#serPdf"),old=btn.innerHTML;btn.disabled=true;btn.textContent="Przygotowuję PDF…";
-  try{const b=await resultsPdf();if(b)await savePdf(b,pdfName("wyniki"))}
+  try{const b=await resultsPdf();if(b){await savePdf(b,pdfName("wyniki"));S.pdfDone=true;renderSeries()}}
   catch(e){toast("Nie udało się utworzyć PDF")}
   finally{btn.innerHTML=old;btn.disabled=false}
 }
@@ -1086,10 +1107,15 @@ async function renderReview(){
   const {j,t}=RV.items[RV.i];
   $("#rvProg").textContent=`${RV.i+1} z ${RV.items.length}`;
   $("#rvTitle").textContent=`${jobName(j)} · zadanie ${t.nr}`;
-  $("#rvLine").innerHTML=fixHtml(t);
+  if(RV.cur!==t){RV.cur=t;RV.wide=false}
+  const kq=S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr));
+  $("#rvCtx").textContent=kq&&kq.question?kq.question:"";$("#rvCtx").hidden=!(kq&&kq.question);
+  $("#rvLine").innerHTML=fixHtml(t,true);
   $("#rvChip").innerHTML="";
-  $("#rvQ").hidden=true;
-  $("#rvReason").hidden=true;
+  const DQ={illegible:"Nieczytelne pismo – co napisał uczeń?",two_marks:"Które zaznaczenie jest ostateczne?",line:"Dokąd prowadzi linia?",content:"Oceń treść odpowiedzi"};
+  $("#rvQ").hidden=false;$("#rvQ").textContent=t.question&&t.question!=="Co napisał uczeń?"?t.question:(DQ[t.doubt]||"Ile punktów za to zadanie?");
+  const sure=(t.items||[]).filter(x=>!x.doubt&&norm(x.answer)!==norm(x.correct)).length;
+  $("#rvReason").hidden=false;$("#rvReason").className="rv-sug";$("#rvReason").textContent=`Sugestia: ${fmt(t.sug!=null?t.sug:t.points)} z ${fmt(t.max)} pkt`+(sure?` · pewne błędy (${sure}) już odliczone`:"")+". Wybierz punkty:";
   const hasOpt=true;
   $("#rvOpts").className="pts";$("#rvOpts").style.gridTemplateColumns="";
   $("#rvOpts").innerHTML=ptsHtml(t);
@@ -1097,7 +1123,9 @@ async function renderReview(){
   $("#rvBad").hidden=true;$("#rvOk").hidden=true;
   $("#rvMax").textContent=fmt(t.max);$("#rvHalf").hidden=true;
   const img=$("#rvImg");img.removeAttribute("src");
-  try{if(t.spot||t.box){const b=await crop(j.res.pages[t.page-1].blob,t.spot||t.box);RV.url=URL.createObjectURL(b);img.src=RV.url}else img.src=j.res.pages[t.page-1].url}catch(e){}
+  const area=RV.wide?(t.box||t.spot):(t.spot||t.box);
+  $("#rvWide").hidden=!(t.spot&&t.box);$("#rvWide").textContent=RV.wide?"Pokaż tylko sporne miejsce":"Pokaż całe zadanie";
+  try{if(area){const b=await crop(j.res.pages[t.page-1].blob,area);RV.url=URL.createObjectURL(b);img.src=RV.url}else img.src=j.res.pages[t.page-1].url}catch(e){}
 }
 function rvSet(p){const {t}=RV.items[RV.i];t.points=p;t.resolved=true;RV.i++;renderReview()}
 $("#rvOk").onclick=()=>rvSet(RV.items[RV.i].t.max);
@@ -1106,6 +1134,7 @@ $("#rvHalf").onclick=()=>{const t=RV.items[RV.i].t;rvSet(Math.round(t.max)/2)};
 $("#rvSkip").onclick=()=>{RV.i++;renderReview()};
 $("#rvBack").onclick=()=>{if(RV.url)URL.revokeObjectURL(RV.url);RV.url=null;renderSeries();show("series")};
 $("#serReview").onclick=openReview;
+$("#rvWide").onclick=()=>{RV.wide=!RV.wide;renderReview()};
 
 /* ---------- views ---------- */
 const views=["home","capture","work","result","key","plan","more","doc","series","review","mark","cam"];
@@ -1183,7 +1212,7 @@ function renderHome(){
 function wipe(){
   if(S.rules){S.rules=[];S.issues=[];try{renderIssues()}catch(e){}}
   try{$("#serTextBox").hidden=true;$("#serText").textContent=""}catch(e){}
-  if(S.jobs){S.jobs.forEach(j=>{try{j.ctl.abort()}catch(e){}j.pages.forEach(p=>URL.revokeObjectURL(p.url))});S.jobs.length=0;stopVoice();MK.job=null;clearInterval(serTimer)}
+  if(S.jobs){S.jobs.forEach(j=>{try{j.ctl.abort()}catch(e){}j.pages.forEach(p=>URL.revokeObjectURL(p.url))});S.jobs.length=0;stopVoice();MK.job=null;S.serDone=false;S.marked=false;S.pdfDone=false;clearInterval(serTimer)}
   if(S.last){S.last.pages.forEach(p=>p.url&&URL.revokeObjectURL(p.url));S.last=null}
   S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
 }
@@ -1431,8 +1460,8 @@ function renderSeries(){
   const dist={};stats.forEach(r=>dist[r.grade.g]=(dist[r.grade.g]||0)+1);
   $("#serGrades").innerHTML=Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="chip ${parseInt(g)>=3?"ok":parseInt(g)===2?"chk":"bad"}">ocena ${esc(g)}: ${dist[g]}</span>`).join("");
   const nCheck=S.jobs.reduce((a,j)=>a+(j.status==="done"?j.res.tasks.filter(t=>stat(t)==="check").length:0),0);
-  $("#serReview").innerHTML=(nCheck?`Przejrzyj wątpliwości (${nCheck})`:"Brak wątpliwości")+'<span class="info" role="button" tabindex="0" data-info="review" aria-label="Co to jest?">i</span>';$("#serReview").disabled=!nCheck;
-  ["#serPdf","#serMark"].forEach(s=>$(s).disabled=!done.length);
+  $("#serReview").disabled=!nCheck;
+  ["#serPdf","#serMark"].forEach(s=>$(s).disabled=!done.length);renderSteps(pend,nCheck);
   const ms=missingNrs();$("#serMissing").hidden=!ms;if(ms)$("#serMissing").textContent=(pend?"Jeszcze bez pracy: nr ":"Brak prac: nr ")+ms;
   const dup=dupNrs();
   const list=$("#serList");list.innerHTML="";
@@ -1556,11 +1585,11 @@ function hasFix(t){
   if(t.type==="open"||t.points>=t.max)return false;
   return !!(t.correct&&String(t.answer).length<=40&&String(t.correct).length<=40&&!eqI(t.correct,t.answer));
 }
-function fixHtml(t){
+function fixHtml(t,od){
   const cnt=t.content?`<div class="small muted">Treść: <b>${esc(t.content)}</b> · sugestia ${fmt(t.points)}/${fmt(t.max)} pkt</div>`:"";
   if(t.items&&t.items.length){
     const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
-    const its=t.items.filter(x=>!eqI(x.answer,x.correct));
+    let its=t.items.filter(x=>!eqI(x.answer,x.correct));if(od&&its.some(x=>x.doubt))its=its.filter(x=>x.doubt);
     if(its.length)return `<div class="fix col">${t.forceCheck&&t.question?`<div class="small warnc">${esc(t.question)}</div>`:""}${cnt}${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">brak</span>`,`<span class="goodh">${esc(x.correct)}</span>`];const ty=x.answer&&x.correct&&norm(x.correct).length>2&&lev(norm(x.answer),norm(x.correct))===1;return `<div class="fixrow">${x.doubt&&!t.resolved&&t.status==="check"?`<span class="chip chk">?</span>`:""}${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b>${b}</b>${ty?`<span class="small halfc">literówka</span>`:""}</div>`}).join("")}${its.length>5?`<div class="small muted">i jeszcze ${its.length-5}</div>`:""}</div>`;
   }
   const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
@@ -1576,7 +1605,7 @@ function fixHtml(t){
 }
 function ptsHtml(t){
   const sug=t.sug!=null?t.sug:t.points,m=t.max,v=new Set([0,m]);
-  [sug-0.5,sug,sug+0.5].concat(m>3?[sug-1]:[]).forEach(x=>{if(x>=0&&x<=m)v.add(Math.round(x*2)/2)});
+  [sug-0.5,sug,sug+0.5].forEach(x=>{if(x>=0&&x<=m)v.add(Math.round(x*2)/2)});
   if(v.size<4&&m>=2)v.add(Math.round(m/2));
   const list=[...v].sort((x,y)=>x-y);
   return `<div class="ptrow">${list.map(p=>`<button class="pt${t.resolved&&t.points===p?" on":""}${!t.resolved&&p===sug?" sug":""}" data-p="${p}">${fmt(p)}</button>`).join("")}<span class="small muted">/ ${fmt(m)} pkt</span></div>`}
@@ -1736,7 +1765,29 @@ $("#resNext").onclick=()=>{
 };
 $("#showAll").onclick=()=>{S.showAll=!S.showAll;renderResult()};
 $("#lastOpen").onclick=()=>{if(S.jobs.length){renderSeries();show("series")}else if(S.last){renderResult();show("result")}};
-$("#serNext").onclick=()=>{if(!canScan()){openPay(true);return}startScan()};
+$("#serNext").onclick=()=>{
+  if(!S.serDone){if(!canScan()){openPay(true);return}startScan();return}
+  const a=serActive();if(a===2)openReview();else if(a===3){primeVoice();openMark(S.jobs.find(j=>j.status==="done"))}else if(a===4)makePdf("results");else $("#serConfirm").hidden=false;
+};
+function serActive(){const pend=pendingCount(),nc=S.jobs.reduce((a,j)=>a+(j.status==="done"?j.res.tasks.filter(t=>stat(t)==="check").length:0),0);return pend||nc?2:!S.marked?3:!S.pdfDone?4:0}
+function renderSteps(pend,nCheck){
+  const fin=S.serDone;$("#serScanBox").hidden=fin;$("#serSteps").hidden=!fin;
+  if(!fin){$("#serNext").innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Skanuj następną pracę';$("#serNext").disabled=false;$("#serFinish").disabled=!S.jobs.length;return}
+  const n=S.jobs.length,a=serActive();
+  $("#stp1t").textContent=`${n} ${n===1?"praca":(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?"prace":"prac"}`+(pend?` · sprawdzam jeszcze ${pend}…`:" · wszystkie sprawdzone");
+  $("#stp2t").textContent=nCheck?`${nCheck} ${nCheck===1?"miejsce":(nCheck%10>=2&&nCheck%10<=4&&(nCheck%100<10||nCheck%100>=20))?"miejsca":"miejsc"} do Twojej decyzji`:pend?"Czekam, aż wszystkie prace się sprawdzą…":"Wszystko jasne";
+  $("#serReview").hidden=!nCheck;
+  $("#stp3t").textContent=S.marked?"Naniesione":"Wynik każdej pracy po kolei, dużą czcionką";
+  $("#stp4t").textContent=S.pdfDone?"PDF zapisany":"Numery, punkty i oceny całej klasy";
+  [1,2,3,4].forEach(k=>{const el=$("#stp"+k),done=k===1||k<a||a===0;el.classList.toggle("done",done&&k!==a);el.classList.toggle("act",k===a);el.querySelector(".sn").textContent=done&&k!==a?"✓":k});
+  const b=$("#serNext");b.disabled=a===2&&!nCheck;
+  b.innerHTML=a===2?(nCheck?`Rozstrzygnij wątpliwości (${nCheck})`:"Sprawdzam prace…"):a===3?"✎ Nanieś wyniki na kartki":a===4?"Zapisz PDF z wynikami":"Zakończ serię";
+}
+function openFinish(){const n=S.jobs.length,p=pendingCount();if(!n)return;$("#finTxt").innerHTML=`<b>Zakończyć skanowanie?</b><div class="small muted" style="margin-top:4px">Zeskanowano ${n} ${n===1?"pracę":(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?"prace":"prac"}${p?`, ${p} jeszcze się sprawdza`:""}. Potem rozstrzygniesz wątpliwości, naniesiesz wyniki na kartki i zapiszesz PDF.</div>`;$("#finConfirm").hidden=false;setTimeout(()=>$("#finConfirm").scrollIntoView({behavior:"smooth",block:"center"}),50)}
+$("#serFinish").onclick=openFinish;
+$("#finNo").onclick=()=>$("#finConfirm").hidden=true;
+$("#finYes").onclick=()=>{S.serDone=true;$("#finConfirm").hidden=true;$("#v-series").scrollTop=0;renderSeries()};
+$("#serMore").onclick=()=>{S.serDone=false;S.marked=false;S.pdfDone=false;renderSeries();if(!canScan()){openPay(true);return}startScan()};
 $("#serHome").onclick=()=>{show("home");renderHome()};
 $("#serEnd").onclick=()=>{$("#serConfirm").hidden=false};
 $("#serNo").onclick=()=>{$("#serConfirm").hidden=true};
