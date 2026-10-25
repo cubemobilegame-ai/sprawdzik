@@ -346,7 +346,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       <div class="small muted" id="costLine" hidden></div>
     </div>
     <div class="sheet-wrap" id="sheets"></div>
-    <div class="section-title"><h3>Zadania</h3></div>
+    <div class="section-title"><h3 id="tasksH">Do decyzji</h3><button class="link small" id="showAll"></button></div>
+    <div class="small muted" id="noDoubts" hidden>Brak wątpliwości. Wynik jest gotowy do przepisania na kartkę.</div>
     <div class="tasks" id="tasks"></div>
     <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext">Następna praca</button></div>
   </section>
@@ -995,7 +996,7 @@ function renderSeries(){
     const b=document.createElement("button");b.className="li";
     let right="";
     if(j.status==="done"){const r=calc(j.res),c=j.res.tasks.filter(t=>stat(t)==="check").length;
-      right=`<span class="small" style="font-variant-numeric:tabular-nums">${fmt(r.pts)}/${fmt(r.max)}</span>${j.refining?`<i class="ser-spin" title="Dopracowuję wątpliwości"></i>`:c?`<span class="chip chk">? ${c}</span>`:""}<span class="ser-grade">${esc(r.grade.g)}</span>`}
+      right=`<span class="small" style="font-variant-numeric:tabular-nums">${fmt(r.pts)}/${fmt(r.max)}</span>${!j.refining&&c?`<span class="chip chk">? ${c}</span>`:""}<span class="ser-grade">${esc(r.grade.g)}</span>`}
     else if(j.status==="work"||j.status==="queue")right=`<span class="small muted">${j.status==="queue"?"w kolejce":`sprawdzam… ${Math.round((Date.now()-j.t0)/1000)} s`}</span><i class="ser-spin"></i>`;
     else if(j.status==="cancel")right=`<span class="small muted">przerwano</span>`;
     else right=`<span class="small" style="color:var(--pen)">błąd · ponów</span>`;
@@ -1061,7 +1062,7 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
       t.reason="Niewyraźne pismo.";
       t.doubt="illegible";t.question="Co napisał uczeń?";
       const pa=(a)=>{const k=(S.key&&S.key.tasks.find(x=>norm(x.nr)===norm(t.nr)))||null,c=k?k.answer:t.correct;return c&&(norm(a)===norm(c)||(!S.accents&&strip(a)===strip(c)))?t.max:0};
-      t.options=[{label:"Pierwszy odczyt",answer:t.answer,points:pa(t.answer)},{label:"Drugi odczyt",answer:String(v.answer??""),points:pa(String(v.answer??""))}];
+      t.options=[{label:`„${t.answer}”`.slice(0,40),answer:t.answer,points:pa(t.answer)},{label:`„${String(v.answer??"")}”`.slice(0,40),answer:String(v.answer??""),points:pa(String(v.answer??""))}];
       t.answer=String(v.answer??t.answer);
     }
   });
@@ -1080,7 +1081,7 @@ const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"
 function applyRules(t){
   if(!S.accents){
     if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
-    if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
+    if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>o.answer)&&new Set(t.options.map(o=>norm(o.answer))).size>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
   }
   if(t.status==="check"&&!t.options){
     t.options=t.max>=1?[{label:"Dobrze",answer:"",points:t.max},{label:"Połowa",answer:"",points:Math.round(t.max)/2},{label:"Źle",answer:"",points:0}]:[{label:"Dobrze",answer:"",points:t.max},{label:"Źle",answer:"",points:0}];
@@ -1125,11 +1126,15 @@ function renderResult(){
     });
     w.innerHTML=h;sh.appendChild(w);
   });
-  sh.querySelectorAll(".pm").forEach(b=>b.onclick=()=>{const el=document.getElementById("task-"+b.dataset.t);el.scrollIntoView({behavior:"smooth",block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")});
+  sh.querySelectorAll(".pm").forEach(b=>b.onclick=()=>{let el=document.getElementById("task-"+b.dataset.t);if(!el){S.showAll=true;renderResult();el=document.getElementById("task-"+b.dataset.t)}if(!el)return;el.scrollIntoView({behavior:"smooth",block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")});
 
   const box=$("#tasks");box.innerHTML="";
   const order=orderIdx(sc.tasks);
-  order.forEach(i=>{
+  const nCheck=order.filter(i=>stat(sc.tasks[i])==="check").length;
+  $("#tasksH").textContent=S.showAll?"Wszystkie zadania":"Do decyzji"+(nCheck?` (${nCheck})`:"");
+  $("#showAll").textContent=S.showAll?"Pokaż tylko sporne":`Pokaż wszystkie (${order.length})`;
+  $("#noDoubts").hidden=S.showAll||nCheck>0;
+  order.filter(i=>S.showAll||stat(sc.tasks[i])==="check").forEach(i=>{
     const t=sc.tasks[i],s=stat(t);
     const d=document.createElement("div");d.className="task"+(s==="check"?" chk":"");d.id="task-"+i;
     const chip=s==="check"?`<span class="dnum">${nums[i]}</span>`:s==="ok"?`<span class="chip ok">Dobrze</span>`:s==="partial"?`<span class="chip chk">Częściowo</span>`:`<span class="chip bad">Źle</span>`;
@@ -1152,6 +1157,7 @@ $("#resNext").onclick=()=>{
   if(S.last&&S.last.demo){wipe()}
   S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera();
 };
+$("#showAll").onclick=()=>{S.showAll=!S.showAll;renderResult()};
 $("#lastOpen").onclick=()=>{if(S.jobs.length){renderSeries();show("series")}else if(S.last){renderResult();show("result")}};
 $("#serNext").onclick=()=>{if(!canScan()){openPay(true);return}S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()};
 $("#serHome").onclick=()=>{show("home");renderHome()};
