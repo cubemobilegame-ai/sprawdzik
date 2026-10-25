@@ -236,6 +236,35 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font:700 11px/1 var(--f-body);font-style:normal;opacity:.45;margin-left:6px;vertical-align:middle;cursor:pointer;flex:none}
 .info:hover{opacity:.8}
 .btn[disabled] .info{pointer-events:auto}
+.camv{padding:0!important;gap:0;background:#000;overflow:hidden;position:relative}
+.camv video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.cam-guide{position:absolute;left:7%;right:7%;top:15%;bottom:28%;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.3);border:3px solid rgba(255,255,255,.6);pointer-events:none;transition:border-color .2s}
+.cam-guide.ready{border-color:#2DD4BF}
+.cam-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;color:#fff;background:linear-gradient(rgba(0,0,0,.6),transparent)}
+.cam-top .icon-btn{color:#fff;font-size:20px}
+.cam-count{font-family:var(--f-display);font-size:26px;font-weight:700;flex:1;text-align:center;line-height:1.1}
+.cam-count small{display:block;font-family:var(--f-body);font-size:14px;font-weight:600;opacity:.85}
+.cam-pill{font-size:13px;font-weight:700;padding:7px 11px;border-radius:99px;border:1.5px solid rgba(255,255,255,.6);color:#fff}
+.cam-pill[aria-pressed="true"]{background:#2DD4BF;border-color:#2DD4BF;color:#11113A}
+.cam-hint{position:absolute;left:16px;right:16px;top:calc(78px + env(safe-area-inset-top,0px));text-align:center;color:#fff;font-weight:700;font-size:17px;text-shadow:0 1px 4px #000}
+.cam-big{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);background:rgba(14,138,125,.94);color:#fff;font-family:var(--f-display);font-size:28px;font-weight:700;padding:16px 24px;border-radius:18px;text-align:center;max-width:86%;pointer-events:none;line-height:1.2}
+.cam-big.warn{background:rgba(184,110,0,.94)}
+.cam-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .3s}
+.cam-flash.on{opacity:.85;transition:none}
+.cam-bottom{position:absolute;left:0;right:0;bottom:0;padding:24px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;background:linear-gradient(transparent,rgba(0,0,0,.75) 30%)}
+.cam-tip{color:rgba(255,255,255,.85);text-align:center;font-size:13px}
+.cam-strip{display:flex;gap:8px;justify-content:center;min-height:62px}
+.cs{position:relative;width:46px;height:62px;border-radius:8px;overflow:hidden;border:1.5px solid rgba(255,255,255,.5);background:#222}
+.cs img{width:100%;height:100%;object-fit:cover;opacity:.85}
+.cs .cn{position:absolute;left:3px;top:2px;font-size:12px;font-weight:800;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+.cs b,.cs .ser-spin{position:absolute;right:3px;bottom:3px}
+.cs b{font-family:var(--f-pen);font-size:19px;color:#fff;background:#E11D48;border-radius:50%;min-width:24px;height:24px;display:grid;place-items:center;line-height:1;padding:0 2px}
+.cs .ser-spin{width:14px;height:14px;border-color:#fff;border-top-color:transparent}
+.cam-ctrl{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.cam-ctrl .btn{min-height:46px;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);color:#fff;font-size:15px;padding:0 8px}
+.shutter{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#2DD4BF calc(var(--p,0) * 360deg),rgba(255,255,255,.35) 0)}
+.shutter::after{content:"";width:62px;height:62px;border-radius:50%;background:#fff;border:3px solid #000}
+.cam-fail{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:#fff;background:#0B0B1A;z-index:3}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -444,6 +473,22 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="bar"><button class="btn primary" id="serNext"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Skanuj następną pracę</button></div>
   </section>
 
+  <!-- LIVE SCANNER -->
+  <section class="view camv" id="v-cam" hidden>
+    <video id="camVid" playsinline muted autoplay></video>
+    <div class="cam-guide" id="camGuide"></div>
+    <div class="cam-flash" id="camFlash"></div>
+    <div class="cam-top"><button class="icon-btn" id="camClose" aria-label="Zakończ skanowanie">✕</button><div class="cam-count" id="camCount">Praca 1</div><button class="cam-pill" id="camAuto" aria-pressed="true">AUTO</button></div>
+    <div class="cam-hint" id="camHint">Połóż kartkę w ramce</div>
+    <div class="cam-big" id="camBig" hidden></div>
+    <div class="cam-bottom">
+      <div class="cam-tip" id="camTip"></div>
+      <div class="cam-strip" id="camStrip"></div>
+      <div class="cam-ctrl"><button class="btn" id="camUndo">↶ Cofnij</button><button class="shutter" id="camShot" aria-label="Zrób zdjęcie"></button><button class="btn" id="camDone">Gotowe</button></div>
+    </div>
+    <div class="cam-fail" id="camFail" hidden><b style="font-size:19px">Podgląd aparatu jest tu niedostępny</b><span class="small" style="opacity:.85">Zrób zdjęcie zwykłym aparatem telefonu.</span><button class="btn primary" id="camFallback">Otwórz aparat</button><button class="btn ghost" style="color:#fff" id="camFailClose">Wróć</button></div>
+  </section>
+
   <!-- MARK ON PAPER -->
   <section class="view mk" id="v-mark" hidden>
     <div class="top"><button class="icon-btn" id="mkBack" aria-label="Wróć">←</button><span class="label" id="mkProg"></span><button class="icon-btn" id="mkSpeak" aria-label="Przeczytaj na głos"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button></div>
@@ -568,6 +613,10 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
         <label class="switch"><span><b>Akcenty i znaki diakrytyczne się liczą</b><br><span class="small muted">np. á, ñ, ü, é, ą, ł – brak znaku to błąd w słowie</span></span><input type="checkbox" id="accents"></label>
         <label class="switch"><span><b>Ortografia się liczy</b><br><span class="small muted">Błąd w uzupełnianym słowie odejmuje punkt</span></span><input type="checkbox" id="spell"></label>
       </div>
+      <div class="panel" id="camPanel">
+        <div class="label">Skanowanie<span class="info" role="button" tabindex="0" data-info="cam" aria-label="Co to jest?">i</span></div>
+        <div class="seg" style="grid-template-columns:1fr 1fr" role="group" aria-label="Sposób skanowania"><button data-cam="live">Automatyczne</button><button data-cam="photo">Zwykłe zdjęcia</button></div>
+      </div>
       <div class="panel">
         <div class="label">Nanoszenie wyników na kartkę<span class="info" role="button" tabindex="0" data-info="flow" aria-label="Co to jest?">i</span></div>
         <div class="seg" style="grid-template-columns:1fr 1fr" role="group" aria-label="Sposób pracy"><button data-flow="one">Po jednej pracy</button><button data-flow="stack">Cały stos</button></div>
@@ -623,7 +672,7 @@ const $=s=>document.querySelector(s);
 const FREE=30;
 const DEFAULT_SCALE=[{g:"6",n:"celujący",min:96},{g:"5",n:"bardzo dobry",min:86},{g:"4",n:"dobry",min:71},{g:"3",n:"dostateczny",min:51},{g:"2",n:"dopuszczający",min:31},{g:"1",n:"niedostateczny",min:0}];
 const ls={get(k,d){try{const v=localStorage.getItem("spr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("spr_"+k,JSON.stringify(v))}catch(e){}}};
-const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),pm:ls.get("pm",false),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","default"),spell:ls.get("spell",false),flow:ls.get("flow","stack"),voice:ls.get("voice",false),dnr:ls.get("dnr",false),classSize:ls.get("classSize",0),
+const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),pm:ls.get("pm",false),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","default"),spell:ls.get("spell",false),flow:ls.get("flow","stack"),camMode:ls.get("cam","live"),voice:ls.get("voice",false),dnr:ls.get("dnr",false),classSize:ls.get("classSize",0),
   mode:"student",pagesPer:ls.get("pagesPer",1),pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
 
 /* ---------- intro ---------- */
@@ -765,7 +814,7 @@ function speechFor(j){
 /* ---------- mark on paper view ---------- */
 const MK={job:null,spoken:0};
 function openMark(job){if(!job)return;MK.job=job;show("mark");renderMark()}
-function markHook(job){if(MK.job===job&&!$("#v-mark").hidden)renderMark()}
+function markHook(job){if(MK.job===job&&!$("#v-mark").hidden)renderMark();if(!$("#v-cam").hidden)renderLive()}
 function renderMark(){
   const j=MK.job;if(!j)return;const L=S.jobs,i=L.indexOf(j);
   if(i<0){renderSeries();show("series");return}
@@ -801,7 +850,7 @@ function markGo(d){const L=S.jobs,i=L.indexOf(MK.job)+d;stopVoice();
 $("#mkBack").onclick=()=>{stopVoice();renderSeries();show("series")};
 $("#mkPrev").onclick=()=>{if(S.flow==="one"){stopVoice();renderSeries();show("series")}else markGo(-1)};
 $("#mkNext").onclick=()=>{primeVoice();
-  if(S.flow==="one"){stopVoice();if(!canScan()){openPay(true);return}S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()}
+  if(S.flow==="one"){stopVoice();if(!canScan()){openPay(true);return}startScan()}
   else markGo(1)};
 $("#mkSpeak").onclick=()=>{if(MK.job&&MK.job.status==="done")speak(speechFor(MK.job))};
 $("#mkMore").onclick=()=>{stopVoice();S.last=MK.job.res;renderResult();show("result")};
@@ -822,6 +871,7 @@ const INFO={
  pdf:["PDF z wynikami","Jedna kartka z wynikami całej klasy, dla Ciebie: tabela nr – punkty – ocena do przepisania do dziennika, średnia, brakujące prace i zadania, które poszły klasie najgorzej. Plik powstaje w telefonie, nic nie jest wysyłane."],
  key:["Wzór odpowiedzi","Zrób zdjęcie swojego wzoru z poprawnymi odpowiedziami (1–5 stron). Aplikacja zapisze odpowiedzi i punkty jako tekst, a zdjęcie usunie. Każda praca jest potem oceniana według wzoru – to daje najpewniejsze wyniki. Zawsze bezpłatnie."],
  pages:["Stron w pracy","Ile stron ma jedna praca ucznia. Aplikacja poprosi o tyle zdjęć i po ostatnim sama zacznie sprawdzanie. Po zapisaniu wzoru ustawia się automatycznie."],
+ cam:["Skanowanie","Automatyczne: aparat działa w aplikacji i sam robi zdjęcie, gdy kartka leży w ramce, a telefon się nie rusza. Kładziesz kolejne kartki jedna po drugiej – każde zdjęcie potwierdza sygnał i numer pracy. „Cofnij” usuwa ostatnie.\nZwykłe zdjęcia: każde zdjęcie robisz przyciskiem w aparacie telefonu. Wybierz, jeśli automatyczne nie działa dobrze na Twoim telefonie."],
  flow:["Sposób pracy","Po jednej pracy: po każdym skanie od razu widzisz wynik do przepisania, nanosisz go i skanujesz następną.\nCały stos: skanujesz wszystkie prace bez czekania, a potem nanosisz wyniki po kolei przyciskiem „Nanoś wyniki na kartki”."],
  voice:["Czytaj wyniki na głos","Na ekranie do naniesienia aplikacja czyta wynik: zadania z błędami, sumę punktów i ocenę. Piszesz na kartce bez patrzenia w telefon. Ikona głośnika w rogu powtarza."],
  dnr:["Numer z dziennika","Poproś uczniów, żeby wpisali swój numer w rogu kartki. Aplikacja go odczyta, a PDF z wynikami ułoży się według numerów. Po wpisaniu liczby uczniów zobaczysz, czyjej pracy brakuje. Nieczytelny numer wpiszesz ręcznie, stukając w niego."],
@@ -833,8 +883,114 @@ document.addEventListener("keydown",e=>{const i=e.target.closest&&e.target.close
 $("#infoOk").onclick=()=>$("#infoSheet").hidden=true;
 $("#infoSheet").onclick=e=>{if(e.target.id==="infoSheet")$("#infoSheet").hidden=true};
 
+/* ---------- live scanner: camera inside the app, auto-capture when the sheet is still ---------- */
+const liveSupported=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+const LV={stream:null,timer:0,prev:null,cap:null,armed:true,still:0,away:0,auto:ls.get("auto",true),busy:false,wake:null,ac:null,resume:false,hintK:"",msgT:0};
+const AW=96,AH=128,STILL=7;
+const acv=document.createElement("canvas");acv.width=AW;acv.height=AH;const acx=acv.getContext("2d",{willReadFrequently:true});
+function startScan(){
+  if(!canScan()){openPay(true);return}
+  S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
+  if(liveSupported&&S.camMode==="live"&&!S.liveBroken)openLive();else openCamera();
+}
+async function openLive(){
+  show("cam");primeVoice();$("#camFail").hidden=true;$("#camBig").hidden=true;
+  try{if(!LV.ac){const A=window.AudioContext||window.webkitAudioContext;if(A)LV.ac=new A()}if(LV.ac&&LV.ac.state==="suspended")LV.ac.resume()}catch(e){}
+  LV.prev=null;LV.cap=null;LV.armed=true;LV.still=0;LV.away=0;renderLive();
+  if(LV.stream)return startTick();
+  try{LV.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1920}}})}
+  catch(e){S.liveBroken=true;$("#camFail").hidden=false;return}
+  if($("#v-cam").hidden){stopLive();return}
+  const v=$("#camVid");v.srcObject=LV.stream;try{await v.play()}catch(e){}
+  try{if(navigator.wakeLock)LV.wake=await navigator.wakeLock.request("screen")}catch(e){}
+  startTick();
+}
+function startTick(){clearInterval(LV.timer);LV.timer=setInterval(liveTick,140)}
+function stopLive(){clearInterval(LV.timer);LV.timer=0;if(LV.stream){LV.stream.getTracks().forEach(t=>t.stop());LV.stream=null}try{$("#camVid").srcObject=null}catch(e){}try{LV.wake&&LV.wake.release()}catch(e){}LV.wake=null}
+function frameGray(){
+  const v=$("#camVid");if(!v.videoWidth)return null;
+  acx.drawImage(v,0,0,AW,AH);const d=acx.getImageData(0,0,AW,AH).data,g=new Uint8Array(AW*AH);
+  for(let i=0,j=0;i<g.length;i++,j+=4)g[i]=(d[j]*3+d[j+1]*6+d[j+2])/10;return g;
+}
+function gdiff(a,b){let s=0;for(let i=0;i<a.length;i+=2)s+=Math.abs(a[i]-b[i]);return s/(a.length/2)}
+function liveTick(){
+  if(LV.busy)return;const g=frameGray();if(!g)return;
+  const mot=LV.prev?gdiff(g,LV.prev):99;LV.prev=g;
+  let sum=0,n=0,edge=0;const x0=AW*.12|0,x1=AW*.88|0,y0=AH*.16|0,y1=AH*.7|0;
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=y*AW+x,v=g[i];sum+=v;n++;if(Math.abs(v-g[i+1])+Math.abs(v-g[i+AW])>40)edge++}
+  const mean=sum/n,ef=edge/n,page=mean>70&&ef>0.025&&ef<0.55;
+  if(!LV.armed){if(!page)LV.away++;else LV.away=0;if(mot>14||LV.away>=3||(LV.cap&&gdiff(g,LV.cap)>28))LV.armed=true}
+  const ready=LV.auto&&LV.armed&&page&&mot<3.2;
+  LV.still=ready?LV.still+1:0;
+  $("#camShot").style.setProperty("--p",Math.min(1,LV.still/STILL));
+  $("#camGuide").classList.toggle("ready",ready);
+  setHint(!LV.auto?"manual":!page?"place":!LV.armed?"next":ready?"hold":"steady");
+  if(LV.still>=STILL){LV.still=0;captureLive(g)}
+}
+const HINTS={place:"Połóż kartkę w ramce",next:"Odłóż kartkę i połóż następną",hold:"Nie ruszaj – robię zdjęcie…",steady:"Trzymaj telefon nieruchomo",manual:"Stuknij biały przycisk, żeby zrobić zdjęcie",busy:"Zapisuję…"};
+function setHint(k){if(LV.hintK===k)return;LV.hintK=k;$("#camHint").textContent=HINTS[k]}
+function flash(){const f=$("#camFlash");f.classList.add("on");setTimeout(()=>f.classList.remove("on"),60)}
+function beep(f){try{const a=LV.ac;if(!a)return;const o=a.createOscillator(),gn=a.createGain();o.frequency.value=f||880;gn.gain.setValueAtTime(.12,a.currentTime);gn.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.18);o.connect(gn).connect(a.destination);o.start();o.stop(a.currentTime+.2)}catch(e){}}
+function bigMsg(t,warn){const b=$("#camBig");b.innerHTML=t;b.classList.toggle("warn",!!warn);b.hidden=false;clearTimeout(LV.msgT);LV.msgT=setTimeout(()=>b.hidden=true,1500)}
+async function captureLive(g){
+  if(LV.busy||!LV.stream)return;
+  if(!canScan()&&!S.pages.length){stopLive();show("home");renderHome();openPay(true);return}
+  LV.busy=true;LV.armed=false;LV.cap=g||frameGray();setHint("busy");
+  const v=$("#camVid"),c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
+  flash();beep();try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
+  try{
+    const raw=await new Promise(r=>c.toBlob(r,"image/jpeg",.92));const blob=await prep(raw);
+    S.pages.push({blob,url:URL.createObjectURL(blob)});
+    if(S.pages.length>=S.pagesPer){
+      const job=gradeWork(true);
+      if(job&&S.flow==="one"){LV.busy=false;stopLive();openMark(job);return}
+      if(job)bigMsg(`✓ Praca ${job.n}<br><span style="font-size:16px;font-weight:600">odłóż tekstem do dołu</span>`);
+    }else bigMsg(`✓ Strona ${S.pages.length} z ${S.pagesPer}<br><span style="font-size:16px;font-weight:600">odwróć kartkę</span>`);
+  }catch(e){bigMsg("Nie udało się zrobić zdjęcia",true)}
+  LV.busy=false;LV.hintK="";renderLive();
+}
+function renderLive(){
+  const n=S.jobs.length+1;
+  $("#camCount").innerHTML=`Praca ${n}`+(S.pagesPer>1?`<small>strona ${S.pages.length+1} z ${S.pagesPer}</small>`:"");
+  $("#camAuto").setAttribute("aria-pressed",LV.auto);$("#camAuto").textContent=LV.auto?"AUTO":"RĘCZNIE";
+  $("#camDone").textContent=S.jobs.length?`Gotowe (${S.jobs.length})`:"Gotowe";
+  $("#camUndo").disabled=!S.pages.length&&!S.jobs.length;
+  $("#camTip").textContent=S.flow==="one"?"Po zdjęciu od razu zobaczysz wynik do przepisania.":"Zeskanowane kartki odkładaj obok, tekstem do dołu. Na koniec odwróć stos – kolejność zgodzi się z aplikacją.";
+  $("#camStrip").innerHTML=S.jobs.slice(-5).map(j=>{const st=j.status==="done"?`<b>${esc(calc(j.res).grade.g)}</b>`:j.status==="error"||j.status==="cancel"?`<b style="background:#B86E00">!</b>`:`<i class="ser-spin"></i>`;return `<div class="cs"><img src="${j.pages[0].url}" alt="Praca ${j.n}"><span class="cn">${j.n}</span>${st}</div>`}).join("");
+}
+function removeJob(j){
+  const i=S.jobs.indexOf(j);if(i<0)return;
+  try{j.ctl.abort()}catch(e){}
+  if(j.status==="done"&&j.res&&j.res.tasks.length)addUsage(-j.pages.length);
+  j.pages.forEach(p=>URL.revokeObjectURL(p.url));S.jobs.splice(i,1);
+  S.jobs.forEach((x,k)=>{x.n=k+1;if(x.res)x.res.n=k+1});
+  if(MK.job===j)MK.job=null;if(S.last===j.res)S.last=null;pump();
+}
+function endLive(){
+  stopLive();
+  if(S.pages.length){const job=gradeWork(true);if(!job){S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[]}}
+  if(S.jobs.length){renderSeries();show("series")}else{show("home");renderHome()}
+}
+$("#camClose").onclick=endLive;
+$("#camDone").onclick=endLive;
+$("#camShot").onclick=()=>{LV.still=0;captureLive(null)};
+$("#camAuto").onclick=()=>{LV.auto=!LV.auto;ls.set("auto",LV.auto);LV.still=0;LV.armed=true;renderLive()};
+$("#camUndo").onclick=()=>{
+  if(S.pages.length){const p=S.pages.pop();URL.revokeObjectURL(p.url);bigMsg("Cofnięto stronę",true)}
+  else{const j=S.jobs[S.jobs.length-1];if(!j)return;removeJob(j);bigMsg(`Usunięto pracę ${j.n}<br><span style="font-size:16px;font-weight:600">zeskanuj ją ponownie</span>`,true);renderSeries()}
+  LV.armed=true;LV.cap=null;beep(440);renderLive();
+};
+$("#camFallback").onclick=()=>{$("#camFail").hidden=true;stopLive();show("home");renderHome();openCamera()};
+$("#camFailClose").onclick=()=>{$("#camFail").hidden=true;stopLive();show("home");renderHome()};
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){if(LV.stream){stopLive();LV.resume=true}}
+  else if(LV.resume){LV.resume=false;if(!$("#v-cam").hidden)openLive()}
+});
+document.querySelectorAll("[data-cam]").forEach(b=>b.onclick=()=>{S.camMode=b.dataset.cam;ls.set("cam",S.camMode);S.liveBroken=false;renderMarkSettings()});
+
 /* ---------- settings: flow, voice, register number ---------- */
 function renderMarkSettings(){
+  $("#camPanel").hidden=!liveSupported;document.querySelectorAll("[data-cam]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cam===S.camMode));
   document.querySelectorAll("[data-flow]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.flow===S.flow));
   $("#flowHint").textContent=S.flow==="one"?"Po każdym skanie od razu widzisz wynik do przepisania. Nanieś go i skanuj następną pracę.":"Skanuj cały stos, jedna praca po drugiej. Potem odwróć stos i nanoś wyniki po kolei (przycisk w serii prac).";
   $("#voiceRow").hidden=!canVoice;$("#voiceSw").checked=S.voice;$("#dnrSw").checked=S.dnr;
@@ -951,7 +1107,7 @@ $("#rvBack").onclick=()=>{if(RV.url)URL.revokeObjectURL(RV.url);RV.url=null;rend
 $("#serReview").onclick=openReview;
 
 /* ---------- views ---------- */
-const views=["home","capture","work","result","key","plan","more","doc","series","review","mark"];
+const views=["home","capture","work","result","key","plan","more","doc","series","review","mark","cam"];
 const TABS=["home","plan","more"];
 function show(v){
   views.forEach(n=>$("#v-"+n).hidden=n!==v);$("#v-"+v).scrollTop=0;
@@ -1073,7 +1229,7 @@ function pendingPages(){return S.jobs?S.jobs.filter(j=>j.status==="queue"||j.sta
 function canScan(){const q=quota();return q.used+pendingPages()<q.limit}
 $("#scanBtn").onclick=()=>{
   if(!canScan()){openPay(true);return}
-  S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera();
+  startScan();
 };
 $("#keyBtn").onclick=()=>{S.mode="key";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()};
 $("#keyClear").onclick=()=>{S.key=null;ls.set("key",null);renderHome();toast("Wzór usunięty")};
@@ -1214,11 +1370,11 @@ $("#keyRetake").onclick=()=>{S.draftKey=null;S.mode="key";openCamera()};
 /* ---------- grade work: series queue (scan next while previous ones are graded) ---------- */
 S.jobs=[];let jobSeq=0;const PAR=3;let serTimer=null;
 function pendingCount(){return S.jobs.filter(j=>j.status==="queue"||j.status==="work").length}
-function gradeWork(){
+function gradeWork(stay){
   if(!S.sample){toast("Odczyt pisma działa w aplikacji Claude.");return}
   if(!canScan()){openPay(true);return}
   const job={id:++jobSeq,n:S.jobs.length+1,pages:S.pages,status:"queue",res:null,err:"",ctl:new AbortController(),t0:Date.now(),sec:0};
-  S.pages=[];S.jobs.push(job);pump();renderSeries();if(S.flow==="one")openMark(job);else show("series");
+  S.pages=[];S.jobs.push(job);pump();renderSeries();if(stay)return job;if(S.flow==="one")openMark(job);else show("series");
 }
 function pump(){
   while(S.jobs.filter(j=>j.status==="work").length<PAR){const j=S.jobs.find(j=>j.status==="queue");if(!j)break;runJob(j)}
@@ -1237,6 +1393,7 @@ async function runJob(job){
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
       return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),sug:pts,options:cleanOptions(t.options,max),content:String(t.content||"").slice(0,8),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50)})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
     });
+    if(!tasks.length&&r.quality==="not_test"){removeJob(job);toast("Pominięto zdjęcie bez pracy ucznia");renderSeries();markHook(job);return}
     tasks.forEach(applyRules);
     mergeIssues(r.test_issues);applyIssues(tasks);applyClassRules(tasks);
     job.res={n:job.n,dnr:cleanDnr(r.dnr),pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?sink.v:null};
@@ -1554,11 +1711,11 @@ $("#resHome").onclick=$("#resDone").onclick=()=>{if(S.jobs.length&&!S.last.demo)
 $("#resNext").onclick=()=>{
   if(!canScan()){show("home");renderHome();openPay(true);return}
   if(S.last&&S.last.demo){wipe()}
-  S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera();
+  startScan();
 };
 $("#showAll").onclick=()=>{S.showAll=!S.showAll;renderResult()};
 $("#lastOpen").onclick=()=>{if(S.jobs.length){renderSeries();show("series")}else if(S.last){renderResult();show("result")}};
-$("#serNext").onclick=()=>{if(!canScan()){openPay(true);return}S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera()};
+$("#serNext").onclick=()=>{if(!canScan()){openPay(true);return}startScan()};
 $("#serHome").onclick=()=>{show("home");renderHome()};
 $("#serEnd").onclick=()=>{$("#serConfirm").hidden=false};
 $("#serNo").onclick=()=>{$("#serConfirm").hidden=true};
