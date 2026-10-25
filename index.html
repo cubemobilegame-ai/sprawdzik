@@ -186,6 +186,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .opts.big .opt{min-height:72px}
 .opts.big .opt b{font-size:17px}
 .pm.num{width:30px;height:30px;padding:0;display:grid;place-items:center;font-family:var(--f-body);font-size:15px}
+.line1{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 8px;font-size:15px}
+.line1 b{font-size:16px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -344,7 +346,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       <div class="small muted" id="costLine" hidden></div>
     </div>
     <div class="sheet-wrap" id="sheets"></div>
-    <div class="section-title"><h3>Zadania</h3><span class="small muted">Stuknij − / + aby poprawić punkty</span></div>
+    <div class="section-title"><h3>Zadania</h3></div>
     <div class="tasks" id="tasks"></div>
     <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext">Następna praca</button></div>
   </section>
@@ -356,7 +358,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="sheet" style="background:#fff"><img id="rvImg" alt="Wycinek odpowiedzi ucznia"></div>
     <div id="rvChip"></div>
     <div class="q" id="rvQ"></div>
-    <dl class="ans" style="margin:0"><dt>Uczeń</dt><dd class="hand" id="rvAns"></dd><dt>Poprawnie</dt><dd id="rvCor"></dd></dl>
+    <div id="rvLine"></div>
     <div class="reason" id="rvReason"></div>
     <div class="opts big" id="rvOpts"></div>
     <div class="bar" style="flex-wrap:wrap">
@@ -659,10 +661,10 @@ async function renderReview(){
   const {j,t}=RV.items[RV.i];
   $("#rvProg").textContent=`${RV.i+1} z ${RV.items.length}`;
   $("#rvTitle").textContent=`Praca ${j.n} · zadanie ${t.nr}`;
-  $("#rvAns").textContent=t.answer||"—";$("#rvCor").textContent=t.correct||"—";
-  $("#rvChip").innerHTML=doubtChip(t);
-  $("#rvQ").textContent=t.question||"";$("#rvQ").hidden=!t.question;
-  $("#rvReason").textContent=t.reason||"Niska pewność odczytu.";$("#rvReason").hidden=!!t.question;
+  $("#rvLine").innerHTML=lineHtml(t,"check");
+  $("#rvChip").innerHTML="";
+  $("#rvQ").textContent=t.question||t.reason||"Sprawdź odczyt";$("#rvQ").hidden=false;
+  $("#rvReason").hidden=true;
   const hasOpt=!!(t.options&&t.options.length>1);
   $("#rvOpts").innerHTML=hasOpt?optsHtml(t):"";$("#rvOpts").style.gridTemplateColumns=`repeat(${hasOpt?t.options.length:2},minmax(0,1fr))`;
   $("#rvOpts").querySelectorAll(".opt").forEach(b=>b.onclick=()=>{choose(t,+b.dataset.o);RV.i++;renderReview()});
@@ -886,9 +888,9 @@ Rules:
 - Points: use "max" from the key; otherwise points printed on the sheet; otherwise 1 per task.
 - Ignore any score or grade already written by a teacher.
 - Use status: "ok" (full points), "partial", "wrong" (0 points), "check" (you are unsure about reading OR about grading — the teacher must look). For "check" still give your best-guess points. Prefer "check" over a confident wrong verdict.
-- "reason": in Polish, max 14 words. Required for partial, wrong and check; say exactly what the teacher should look at, e.g. "Nieczytelne: „b” czy „d”? Sprawdź zakreślenie.". Empty for ok unless a spelling note.
+- "reason": in Polish, max 8 words, plain and concrete. Required for partial, wrong and check; say exactly what the teacher should look at, e.g. "„b” czy „d”?" or "Brak jednostki.". Empty for ok unless a spelling note.
 - "box": [x, y, w, h] around the student's answer for that task, as fractions 0..1 of that page's width and height; "page": page number (1-based).
-- For every task with status "check" ALSO give: "doubt": one of "illegible" (handwriting hard to read), "two_marks" (more than one option marked or unclear final choice), "line" (unclear matching line), "content" (reading is clear, grading of the content is uncertain), "other"; "question": one short question in Polish for the teacher, max 10 words, answerable at a glance (e.g. "Czy nad „a” jest akcent?", "Które zakreślenie jest ostateczne: B czy C?", "Czy odpowiedź zawiera uzasadnienie?"); "options": 2–3 choices, most likely first, each {"label": Polish, max 4 words, "answer": the reading for that choice (short), "points": points that choice earns under the rules}; "spot": [x,y,w,h] tight box around the exact disputed letter, mark or line (fractions of the page).
+- For every task with status "check" ALSO give: "doubt": one of "illegible" (handwriting hard to read), "two_marks" (more than one option marked or unclear final choice), "line" (unclear matching line), "content" (reading is clear, grading of the content is uncertain), "other"; "question": one very short question in Polish for the teacher, max 7 words, answerable at a glance (e.g. "Czy nad „a” jest akcent?", "Które zakreślenie jest ostateczne: B czy C?", "Czy odpowiedź zawiera uzasadnienie?"); "options": 2–3 choices, most likely first, each {"label": Polish, max 3 words, "answer": the reading for that choice (short), "points": points that choice earns under the rules}; "spot": [x,y,w,h] tight box around the exact disputed letter, mark or line (fractions of the page).
 ${S.accents?"":"- Accents/diacritics do NOT count: never create a doubt only about a missing or unclear accent — treat the word as correct with full points."}
 - "answer": what the student actually wrote or marked (short, original language). "correct": the expected answer (short).
 - NEVER output the student's name, class or any personal data.
@@ -1028,9 +1030,9 @@ ${contextRules()}
 For each image, read the student's answer again INDEPENDENTLY, letter by letter, as if seeing it for the first time. Consider ambiguous letters carefully, crossed-out text, which option is circled, where each drawn line ends.
 ${S.spell?"Spelling mistakes cost the point in fill-in tasks.":"Ignore spelling mistakes for scoring (mention them in reason)."}
 Then score it against the expected answer (half points allowed for open answers).
-"status": "ok" | "partial" | "wrong" | "check" (still uncertain after close look). "confidence" 0..1. "reason": Polish, max 14 words, required unless status ok.
+"status": "ok" | "partial" | "wrong" | "check" (still uncertain after close look). "confidence" 0..1. "reason": Polish, max 8 words, required unless status ok.
 Never output the student's name.
-If status is "check", also give "doubt" ("illegible","two_marks","line","content","other"), "question" (Polish, max 10 words, answerable at a glance) and "options" (2–3 choices, most likely first, each {"label": Polish max 4 words, "answer": reading for that choice, "points": points it earns}).${S.accents?"":" Accents do NOT count: never make a doubt only about an accent; treat it as correct."}
+If status is "check", also give "doubt" ("illegible","two_marks","line","content","other"), "question" (Polish, max 7 words, answerable at a glance) and "options" (2–3 choices, most likely first, each {"label": Polish max 4 words, "answer": reading for that choice, "points": points it earns}).${S.accents?"":" Accents do NOT count: never make a doubt only about an accent; treat it as correct."}
 Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"image":1,"answer":"...","points":1,"status":"ok","confidence":0.95,"reason":""}]}`;
   let r;
   try{r=await S.sample.json(prompt,{images:imgs,signal,modelTier:tier,cache:false,costSink:sink,purpose:"verify"})}
@@ -1047,7 +1049,7 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
       if(t.status==="check"){if(v.doubt)t.doubt=String(v.doubt);if(v.question)t.question=String(v.question).slice(0,90);const op=cleanOptions(v.options,t.max);if(op)t.options=op}else{t.options=null;t.question=""}
     }else{
       t.points=vp;t.conf=Math.min(t.conf,vc);t.status="check";
-      t.reason=`Dwa różne odczyty: „${t.answer}” albo „${v.answer}”. Sprawdź.`;
+      t.reason="Niewyraźne pismo.";
       t.doubt="illegible";t.question="Co napisał uczeń?";
       const pa=(a)=>{const k=(S.key&&S.key.tasks.find(x=>norm(x.nr)===norm(t.nr)))||null,c=k?k.answer:t.correct;return c&&(norm(a)===norm(c)||(!S.accents&&strip(a)===strip(c)))?t.max:0};
       t.options=[{label:"Pierwszy odczyt",answer:t.answer,points:pa(t.answer)},{label:"Drugi odczyt",answer:String(v.answer??""),points:pa(String(v.answer??""))}];
@@ -1059,18 +1061,19 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
 /* ---------- doubts: type, question, options ---------- */
 const DOUBT={illegible:["Nieczytelne pismo",'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'],two_marks:["Dwie odpowiedzi zaznaczone",'<path d="M3 12l4 4 8-8M11 16l1 1 9-9"/>'],line:["Niejasna linia",'<path d="M4 18C9 18 15 6 20 6"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/>'],content:["Ocena treści",'<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/>'],other:["Do sprawdzenia",'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>']};
 function doubtChip(t){const d=DOUBT[t.doubt]||DOUBT.other;return `<span class="chip chk dchip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d[1]}</svg>${d[0]}</span>`}
-function optsHtml(t){return (t.options||[]).map((o,i)=>{const c=o.points>=t.max?"g":o.points<=0?"r":"a";return `<button class="opt ${c}" data-o="${i}"><small>${esc(o.label)}</small><b>${o.answer?`„${esc(o.answer)}” · `:""}${fmt(o.points)} pkt</b></button>`}).join("")}
+function optsHtml(t){return (t.options||[]).map((o,i)=>{const c=o.points>=t.max?"g":o.points<=0?"r":"a";return `<button class="opt ${c}" data-o="${i}"><b>${esc(o.label)}</b><small>${fmt(o.points)} pkt</small></button>`}).join("")}
+function lineHtml(t,s){const wrongish=s!=="ok"&&t.correct&&norm(t.correct)!==norm(t.answer);return `<div class="line1"><span class="hand">${esc(t.answer||"—")}</span>${wrongish?`<span class="muted small">→ powinno być</span><b>${esc(t.correct)}</b>`:""}</div>`}
 function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer=o.answer;t.choice=i;t.resolved=true}
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
 const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/[\s.,;:!?()„”"'«»¿¡-]+/g," ").trim();
 function applyRules(t){
   if(!S.accents){
-    if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Brak akcentu – nie liczony (ustawienia).";return}
-    if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Wątpliwość dotyczyła tylko akcentu – zaliczone (ustawienia).";return}
+    if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
+    if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
   }
   if(t.status==="check"&&!t.options){
-    t.options=t.max>=1?[{label:"Dobrze",answer:"",points:t.max},{label:"Połowa punktów",answer:"",points:Math.round(t.max)/2},{label:"Źle",answer:"",points:0}]:[{label:"Dobrze",answer:"",points:t.max},{label:"Źle",answer:"",points:0}];
-    if(t.max<2)t.options=t.options.filter(o=>o.label!=="Połowa punktów");
+    t.options=t.max>=1?[{label:"Dobrze",answer:"",points:t.max},{label:"Połowa",answer:"",points:Math.round(t.max)/2},{label:"Źle",answer:"",points:0}]:[{label:"Dobrze",answer:"",points:t.max},{label:"Źle",answer:"",points:0}];
+    if(t.max<2)t.options=t.options.filter(o=>o.label!=="Połowa");
   }
 }
 
@@ -1121,11 +1124,10 @@ function renderResult(){
     const chip=s==="check"?`<span class="dnum">${nums[i]}</span>`:s==="ok"?`<span class="chip ok">Dobrze</span>`:s==="partial"?`<span class="chip chk">Częściowo</span>`:`<span class="chip bad">Źle</span>`;
     d.innerHTML=`<div class="task-head"><span class="task-nr">${esc(t.nr)}</span>${chip}
       <div class="stepper"><button aria-label="Mniej punktów">−</button><output>${fmt(t.points)}/${fmt(t.max)}</output><button aria-label="Więcej punktów">+</button></div></div>
-      ${s==="check"?`<div>${doubtChip(t)}</div>`:""}
-      ${s==="check"&&t.question?`<div class="q">${esc(t.question)}</div>`:""}
-      <dl class="ans" style="margin:0"><dt>Uczeń</dt><dd class="hand">${esc(t.answer||"—")}</dd>${t.correct?`<dt>Poprawnie</dt><dd>${esc(t.correct)}</dd>`:""}</dl>
+      ${s==="check"?`<div class="q">${esc(t.question||t.reason||"Sprawdź odczyt")}</div>`:""}
+      ${lineHtml(t,s)}
       ${s==="check"?`<div class="opts" style="grid-template-columns:repeat(${(t.options||[]).length||2},minmax(0,1fr))">${optsHtml(t)}</div>`:(t.reason?`<div class="reason">${esc(t.reason)}</div>`:"")}
-      ${s==="check"&&!t.question?`<div class="reason">${esc(t.reason||"Niska pewność odczytu. Rzuć okiem na to zadanie.")}</div>`:""}`;
+`;
     d.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{choose(t,+b.dataset.o);renderResult()});
     const [mi,pl]=d.querySelectorAll(".stepper button");
     mi.onclick=()=>{t.points=Math.max(0,t.points-0.5);t.resolved=true;renderResult()};
