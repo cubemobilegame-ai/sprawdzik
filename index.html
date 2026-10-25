@@ -549,7 +549,7 @@ intro.addEventListener("click",()=>{if(plays>=1||Date.now()-t0>1200)endIntro()})
 
 /* ---------- AI: Claude app (window.claude) or own server (/api/ai) ---------- */
 const TIERMAP={complex:"default",default:"quick"};
-const viaClaude=c=>({json:(p,o={})=>{const {costSink,purpose,...rest}=o;return c.json(p,{...rest,modelTier:TIERMAP[o.modelTier]||o.modelTier})},limits:()=>c.limits()});
+const viaClaude=c=>({json:(p,o={})=>{const {costSink,purpose,...rest}=o;if(purpose==="verify")rest.effort="low";return c.json(p,{...rest,modelTier:TIERMAP[o.modelTier]||o.modelTier})},limits:()=>c.limits()});
 
 S.cost=0;
 function getCode(){return ls.get("code","")}
@@ -652,7 +652,7 @@ $("#serCopy").onclick=()=>{
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>{toast("Wyniki skopiowane");$("#serTextBox").hidden=false},show);else show();
 };
 let RV={items:[],i:0,url:null};
-function reviewItems(){const out=[];S.jobs.forEach(j=>{if(j.status==="done")orderIdx(j.res.tasks).forEach(i=>{const t=j.res.tasks[i];if(stat(t)==="check")out.push({j,t})})});return out}
+function reviewItems(){const out=[];S.jobs.forEach(j=>{if(j.status==="done"&&!j.refining)orderIdx(j.res.tasks).forEach(i=>{const t=j.res.tasks[i];if(stat(t)==="check")out.push({j,t})})});return out}
 async function openReview(){RV.items=reviewItems();RV.i=0;if(!RV.items.length){toast("Brak wątpliwości do przejrzenia");return}show("review");renderReview()}
 async function renderReview(){
   if(RV.url){URL.revokeObjectURL(RV.url);RV.url=null}
@@ -957,13 +957,21 @@ async function runJob(job){
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
       return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),options:cleanOptions(t.options,max),spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
     });
-    if(tasks.length){await verify(tasks,job.ctl.signal,S.first,false,pages,sink);if(S.precise)await verify(tasks,job.ctl.signal,"complex",true,pages,sink)}
     tasks.forEach(applyRules);
     job.res={n:job.n,pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?sink.v:null};
     job.status=tasks.length?"done":"error";if(!tasks.length)job.err="Nie znaleziono zadań na zdjęciu.";
     job.sec=Math.round((Date.now()-job.t0)/1000);
-    if(tasks.length)addUsage(pages.length);
+    if(tasks.length){addUsage(pages.length);job.refining=true}
     try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}
+    renderSeries();if(!$("#v-home").hidden)renderHome();pump();
+    if(tasks.length){
+      try{
+        await Promise.all([verify(tasks,job.ctl.signal,S.first,S.precise?"others":"all",pages,sink),S.precise?verify(tasks,job.ctl.signal,"complex","checks",pages,sink):null]);
+        tasks.forEach(applyRules);
+      }catch(e){}
+      job.refining=false;job.res.cost=S.server?sink.v:null;
+      if(S.last===job.res&&!$("#v-result").hidden)renderResult();
+    }
   }catch(e){
     if(e&&e.code==="cancelled")job.status="cancel";
     else{job.status="error";job.err=errText(e)||"Coś przerwało sprawdzanie."}
@@ -987,7 +995,7 @@ function renderSeries(){
     const b=document.createElement("button");b.className="li";
     let right="";
     if(j.status==="done"){const r=calc(j.res),c=j.res.tasks.filter(t=>stat(t)==="check").length;
-      right=`<span class="small" style="font-variant-numeric:tabular-nums">${fmt(r.pts)}/${fmt(r.max)}</span>${c?`<span class="chip chk">? ${c}</span>`:""}<span class="ser-grade">${esc(r.grade.g)}</span>`}
+      right=`<span class="small" style="font-variant-numeric:tabular-nums">${fmt(r.pts)}/${fmt(r.max)}</span>${j.refining?`<i class="ser-spin" title="Dopracowuję wątpliwości"></i>`:c?`<span class="chip chk">? ${c}</span>`:""}<span class="ser-grade">${esc(r.grade.g)}</span>`}
     else if(j.status==="work"||j.status==="queue")right=`<span class="small muted">${j.status==="queue"?"w kolejce":`sprawdzam… ${Math.round((Date.now()-j.t0)/1000)} s`}</span><i class="ser-spin"></i>`;
     else if(j.status==="cancel")right=`<span class="small muted">przerwano</span>`;
     else right=`<span class="small" style="color:var(--pen)">błąd · ponów</span>`;
@@ -1016,8 +1024,9 @@ async function crop(blob,box){
   }finally{bmp.close&&bmp.close()}
 }
 const norm=s=>String(s||"").toLowerCase().replace(/[\s.,;:!?()„”"'«»-]+/g," ").trim();
-async function verify(tasks,signal,tier,onlyCheck,pages,sink){
-  const rank=t=>t.status==="check"?0:onlyCheck?9:t.conf<0.9?1:(t.status==="wrong"||t.status==="partial")?2:9;
+async function verify(tasks,signal,tier,which,pages,sink){
+  const onlyCheck=which==="checks";
+  const rank=t=>t.status==="check"?(which==="others"?9:0):onlyCheck?9:t.conf<0.9?1:(t.status==="wrong"||t.status==="partial")?2:9;
   const pick=tasks.map((t,i)=>({t,i,r:rank(t)})).filter(o=>o.r<9&&o.t.box).sort((a,b)=>a.r-b.r).slice(0,onlyCheck?3:S.maxImg);
   if(!pick.length)return;
   const imgs=[];
