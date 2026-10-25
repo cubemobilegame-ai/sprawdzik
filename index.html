@@ -233,6 +233,9 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .mk-ok{font-size:18px;line-height:1.5;padding:4px 2px}
 .mk-wait{display:flex;flex-direction:column;align-items:center;gap:12px;padding:36px 0;text-align:center;font-size:17px}
 .mk-wait .ser-spin{width:34px;height:34px;border-width:3px}
+.info{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font:700 11px/1 var(--f-body);font-style:normal;opacity:.45;margin-left:6px;vertical-align:middle;cursor:pointer;flex:none}
+.info:hover{opacity:.8}
+.btn[disabled] .info{pointer-events:auto}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -321,7 +324,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="scan-hero">
       <h2>Skanuj pracę ucznia</h2>
       <p>Zrób zdjęcie kartkówki lub sprawdzianu. Aplikacja odczyta odpowiedzi, policzy punkty i wystawi ocenę.</p>
-      <div class="pgsel" role="group" aria-label="Liczba stron w jednej pracy"><span>Stron w pracy:</span><button data-pg="1">1</button><button data-pg="2">2</button><button data-pg="3">3</button><button data-pg="4">4</button></div>
+      <div class="pgsel" role="group" aria-label="Liczba stron w jednej pracy"><span>Stron w pracy:<span class="info" role="button" tabindex="0" data-info="pages" aria-label="Co to jest?">i</span></span><button data-pg="1">1</button><button data-pg="2">2</button><button data-pg="3">3</button><button data-pg="4">4</button></div>
       <button class="btn" id="scanBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Otwórz aparat</button>
     </div>
 
@@ -334,7 +337,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
         </div>
       </div>
       <div class="row" style="flex-wrap:wrap">
-        <button class="btn grow" id="keyBtn">Zeskanuj wzór</button><span class="free">BEZPŁATNIE</span>
+        <button class="btn grow" id="keyBtn">Zeskanuj wzór</button><span class="free">BEZPŁATNIE</span><span class="info" role="button" tabindex="0" data-info="key" aria-label="Co to jest?">i</span>
         <button class="btn ghost danger" id="keyClear" hidden>Usuń wzór</button>
       </div>
     </div>
@@ -426,10 +429,10 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     </div>
     <div class="issues" id="issuesSer" hidden></div>
     <p class="small muted" style="margin:0">Skanuj kolejne prace bez czekania. Sprawdzanie trwa w tle, a wyniki pojawiają się na liście. Stuknij pracę, żeby zobaczyć szczegóły.</p>
-    <button class="btn" id="serMark" style="border-color:var(--blue);color:var(--blue)">✎ Nanoś wyniki na kartki</button>
+    <button class="btn" id="serMark" style="border-color:var(--blue);color:var(--blue)">✎ Nanoś wyniki na kartki<span class="info" role="button" tabindex="0" data-info="mark" aria-label="Co to jest?">i</span></button>
     <div class="ser-tools">
       <button class="btn" id="serReview">Przejrzyj wątpliwości</button>
-      <button class="btn" id="serPdf">PDF z wynikami</button>
+      <button class="btn" id="serPdf">PDF z wynikami<span class="info" role="button" tabindex="0" data-info="pdf" aria-label="Co to jest?">i</span></button>
     </div>
     <div class="small muted" id="serMissing" hidden></div>
     <div class="list" id="serList"></div>
@@ -561,16 +564,16 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       </div>
       <div class="panel">
         <label class="switch"><span><b>Oceny z plusami i minusami</b><br><span class="small muted">np. 4+, 5− na górze i dole każdego przedziału skali</span></span><input type="checkbox" id="pmSw"></label>
-        <label class="switch"><span><b>Tryb dokładny (zalecany)</b><br><span class="small muted">Zadania, które nadal budzą wątpliwość, sprawdza dodatkowo mocniejszy model. Trwa trochę dłużej.</span></span><input type="checkbox" id="precise"></label>
+        <label class="switch"><span><b>Tryb dokładny (zalecany)</b><span class="info" role="button" tabindex="0" data-info="precise" aria-label="Co to jest?">i</span><br><span class="small muted">Zadania, które nadal budzą wątpliwość, sprawdza dodatkowo mocniejszy model. Trwa trochę dłużej.</span></span><input type="checkbox" id="precise"></label>
         <label class="switch"><span><b>Akcenty i znaki diakrytyczne się liczą</b><br><span class="small muted">np. á, ñ, ü, é, ą, ł – brak znaku to błąd w słowie</span></span><input type="checkbox" id="accents"></label>
         <label class="switch"><span><b>Ortografia się liczy</b><br><span class="small muted">Błąd w uzupełnianym słowie odejmuje punkt</span></span><input type="checkbox" id="spell"></label>
       </div>
       <div class="panel">
-        <div class="label">Nanoszenie wyników na kartkę</div>
+        <div class="label">Nanoszenie wyników na kartkę<span class="info" role="button" tabindex="0" data-info="flow" aria-label="Co to jest?">i</span></div>
         <div class="seg" style="grid-template-columns:1fr 1fr" role="group" aria-label="Sposób pracy"><button data-flow="one">Po jednej pracy</button><button data-flow="stack">Cały stos</button></div>
         <div class="small muted" id="flowHint"></div>
-        <label class="switch" id="voiceRow"><span><b>Czytaj wyniki na głos</b><br><span class="small muted">Słuchasz i piszesz, bez patrzenia w telefon</span></span><input type="checkbox" id="voiceSw"></label>
-        <label class="switch"><span><b>Numer z dziennika</b><br><span class="small muted">Uczeń pisze swój numer w rogu kartki. Wyniki w PDF ułożą się według numerów.</span></span><input type="checkbox" id="dnrSw"></label>
+        <label class="switch" id="voiceRow"><span><b>Czytaj wyniki na głos</b><span class="info" role="button" tabindex="0" data-info="voice" aria-label="Co to jest?">i</span><br><span class="small muted">Słuchasz i piszesz, bez patrzenia w telefon</span></span><input type="checkbox" id="voiceSw"></label>
+        <label class="switch"><span><b>Numer z dziennika</b><span class="info" role="button" tabindex="0" data-info="dnr" aria-label="Co to jest?">i</span><br><span class="small muted">Uczeń pisze swój numer w rogu kartki. Wyniki w PDF ułożą się według numerów.</span></span><input type="checkbox" id="dnrSw"></label>
         <label class="row small" id="classRow" for="classSize"><span class="grow">Uczniów w klasie<br><span class="muted">pokaże, czyjej pracy brakuje</span></span><input class="field" id="classSize" type="number" min="0" max="60" inputmode="numeric" placeholder="np. 26" style="width:96px"></label>
       </div>
       <div class="panel">
@@ -591,6 +594,14 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       <input class="field" id="codeInput" type="password" autocomplete="off" aria-label="Kod dostępu">
       <div class="reason" id="codeWrong" hidden>Kod jest niepoprawny. Spróbuj ponownie.</div>
       <button class="btn primary" id="codeSave">Zapisz</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="infoSheet" hidden>
+    <div class="modal" role="dialog" aria-labelledby="infoH">
+      <h2 id="infoH" style="font-size:20px"></h2>
+      <p id="infoP" style="margin:0;font-size:16px;line-height:1.55"></p>
+      <button class="btn primary" id="infoOk">Rozumiem</button>
     </div>
   </div>
 
@@ -804,6 +815,24 @@ $("#mkNr").onclick=()=>{if(!S.dnr||!MK.job||MK.job.status!=="done")return;$("#dn
 $("#dnrCancel").onclick=()=>$("#dnrSheet").hidden=true;
 $("#dnrSave").onclick=()=>{const v=String($("#dnrInput").value).trim();if(v&&!cleanDnr(v)){toast(S.classSize>0?`Numer od 1 do ${S.classSize}`:"Niepoprawny numer");return}MK.job.res.dnr=cleanDnr(v);$("#dnrSheet").hidden=true;renderMark();renderSeries()};
 
+/* ---------- small (i) explanations ---------- */
+const INFO={
+ mark:["Nanoś wyniki na kartki","Tryb do przepisywania wyników na papier. Odwróć zeskanowany stos – aplikacja pokazuje prace w tej samej kolejności, dużą czcionką: wynik, ocenę i tylko zadania z błędami. Piszesz na kartce i klikasz „Następna” albo przesuwasz palcem."],
+ review:["Przejrzyj wątpliwości","Pokazuje po kolei wszystkie zadania z całej serii, których aplikacja nie była pewna, np. nieczytelne słowo. Przy każdym widzisz wycinek kartki i jednym stuknięciem wybierasz liczbę punktów."],
+ pdf:["PDF z wynikami","Jedna kartka z wynikami całej klasy, dla Ciebie: tabela nr – punkty – ocena do przepisania do dziennika, średnia, brakujące prace i zadania, które poszły klasie najgorzej. Plik powstaje w telefonie, nic nie jest wysyłane."],
+ key:["Wzór odpowiedzi","Zrób zdjęcie swojego wzoru z poprawnymi odpowiedziami (1–5 stron). Aplikacja zapisze odpowiedzi i punkty jako tekst, a zdjęcie usunie. Każda praca jest potem oceniana według wzoru – to daje najpewniejsze wyniki. Zawsze bezpłatnie."],
+ pages:["Stron w pracy","Ile stron ma jedna praca ucznia. Aplikacja poprosi o tyle zdjęć i po ostatnim sama zacznie sprawdzanie. Po zapisaniu wzoru ustawia się automatycznie."],
+ flow:["Sposób pracy","Po jednej pracy: po każdym skanie od razu widzisz wynik do przepisania, nanosisz go i skanujesz następną.\nCały stos: skanujesz wszystkie prace bez czekania, a potem nanosisz wyniki po kolei przyciskiem „Nanoś wyniki na kartki”."],
+ voice:["Czytaj wyniki na głos","Na ekranie do naniesienia aplikacja czyta wynik: zadania z błędami, sumę punktów i ocenę. Piszesz na kartce bez patrzenia w telefon. Ikona głośnika w rogu powtarza."],
+ dnr:["Numer z dziennika","Poproś uczniów, żeby wpisali swój numer w rogu kartki. Aplikacja go odczyta, a PDF z wynikami ułoży się według numerów. Po wpisaniu liczby uczniów zobaczysz, czyjej pracy brakuje. Nieczytelny numer wpiszesz ręcznie, stukając w niego."],
+ precise:["Tryb dokładny","Zadania, których aplikacja nadal nie jest pewna, sprawdza dodatkowo mocniejszy model na powiększonym wycinku kartki. Dokładniej, ale trochę dłużej."]
+};
+function showInfo(k){const d=INFO[k];if(!d)return;$("#infoH").textContent=d[0];$("#infoP").innerHTML=esc(d[1]).replace(/\n/g,"<br><br>");$("#infoSheet").hidden=false}
+document.addEventListener("click",e=>{const i=e.target.closest&&e.target.closest(".info");if(!i)return;e.preventDefault();e.stopPropagation();showInfo(i.dataset.info)},true);
+document.addEventListener("keydown",e=>{const i=e.target.closest&&e.target.closest(".info");if(i&&(e.key==="Enter"||e.key===" ")){e.preventDefault();showInfo(i.dataset.info)}});
+$("#infoOk").onclick=()=>$("#infoSheet").hidden=true;
+$("#infoSheet").onclick=e=>{if(e.target.id==="infoSheet")$("#infoSheet").hidden=true};
+
 /* ---------- settings: flow, voice, register number ---------- */
 function renderMarkSettings(){
   document.querySelectorAll("[data-flow]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.flow===S.flow));
@@ -881,10 +910,10 @@ async function resultsPdf(){
   return buildPdf(imgs);
 }
 async function makePdf(kind){
-  const btn=$("#serPdf"),old=btn.textContent;btn.disabled=true;btn.textContent="Przygotowuję PDF…";
+  const btn=$("#serPdf"),old=btn.innerHTML;btn.disabled=true;btn.textContent="Przygotowuję PDF…";
   try{const b=await resultsPdf();if(b)await savePdf(b,pdfName("wyniki"))}
   catch(e){toast("Nie udało się utworzyć PDF")}
-  finally{btn.textContent=old;btn.disabled=false}
+  finally{btn.innerHTML=old;btn.disabled=false}
 }
 $("#serPdf").onclick=()=>makePdf("results");
 
@@ -1240,7 +1269,7 @@ function renderSeries(){
   const dist={};stats.forEach(r=>dist[r.grade.g]=(dist[r.grade.g]||0)+1);
   $("#serGrades").innerHTML=Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="chip ${parseInt(g)>=3?"ok":parseInt(g)===2?"chk":"bad"}">ocena ${esc(g)}: ${dist[g]}</span>`).join("");
   const nCheck=S.jobs.reduce((a,j)=>a+(j.status==="done"?j.res.tasks.filter(t=>stat(t)==="check").length:0),0);
-  $("#serReview").textContent=nCheck?`Przejrzyj wątpliwości (${nCheck})`:"Brak wątpliwości";$("#serReview").disabled=!nCheck;
+  $("#serReview").innerHTML=(nCheck?`Przejrzyj wątpliwości (${nCheck})`:"Brak wątpliwości")+'<span class="info" role="button" tabindex="0" data-info="review" aria-label="Co to jest?">i</span>';$("#serReview").disabled=!nCheck;
   ["#serPdf","#serMark"].forEach(s=>$(s).disabled=!done.length);
   const ms=missingNrs();$("#serMissing").hidden=!ms;if(ms)$("#serMissing").textContent=(pend?"Jeszcze bez pracy: nr ":"Brak prac: nr ")+ms;
   const dup=dupNrs();
