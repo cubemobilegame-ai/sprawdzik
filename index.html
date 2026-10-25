@@ -652,7 +652,7 @@ $("#serCopy").onclick=()=>{
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>{toast("Wyniki skopiowane");$("#serTextBox").hidden=false},show);else show();
 };
 let RV={items:[],i:0,url:null};
-function reviewItems(){const out=[];S.jobs.forEach(j=>{if(j.status==="done")j.res.tasks.forEach(t=>{if(stat(t)==="check")out.push({j,t})})});return out}
+function reviewItems(){const out=[];S.jobs.forEach(j=>{if(j.status==="done")orderIdx(j.res.tasks).forEach(i=>{const t=j.res.tasks[i];if(stat(t)==="check")out.push({j,t})})});return out}
 async function openReview(){RV.items=reviewItems();RV.i=0;if(!RV.items.length){toast("Brak wątpliwości do przejrzenia");return}show("review");renderReview()}
 async function renderReview(){
   if(RV.url){URL.revokeObjectURL(RV.url);RV.url=null}
@@ -1058,6 +1058,8 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
   });
 }
 
+/* ---------- order tasks like on paper: page, then top to bottom ---------- */
+function orderIdx(tasks){return tasks.map((t,i)=>i).sort((a,b)=>{const A=tasks[a],B=tasks[b];if(A.page!==B.page)return A.page-B.page;const ya=A.box?A.box[1]:null,yb=B.box?B.box[1]:null;if(ya!=null&&yb!=null&&Math.abs(ya-yb)>0.01)return ya-yb;return a-b})}
 /* ---------- doubts: type, question, options ---------- */
 const DOUBT={illegible:["Nieczytelne pismo",'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'],two_marks:["Dwie odpowiedzi zaznaczone",'<path d="M3 12l4 4 8-8M11 16l1 1 9-9"/>'],line:["Niejasna linia",'<path d="M4 18C9 18 15 6 20 6"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/>'],content:["Ocena treści",'<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/>'],other:["Do sprawdzenia",'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>']};
 function doubtChip(t){const d=DOUBT[t.doubt]||DOUBT.other;return `<span class="chip chk dchip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d[1]}</svg>${d[0]}</span>`}
@@ -1098,7 +1100,7 @@ function renderResult(){
   $("#costLine").hidden=sc.cost==null;if(sc.cost!=null)$("#costLine").textContent=`Koszt tego skanu: ${(sc.cost*100).toFixed(2).replace(".",",")} gr brutto`;
   const qn=$("#qualityNote");qn.hidden=sc.quality==="ok"||!sc.qnote;qn.textContent=sc.qnote?("Uwaga: "+sc.qnote):"";
 
-  const nums={};let nk=0;sc.tasks.forEach((t,i)=>{if(stat(t)==="check")nums[i]=++nk});
+  const nums={};let nk=0;orderIdx(sc.tasks).forEach(i=>{if(stat(sc.tasks[i])==="check")nums[i]=++nk});
   const sh=$("#sheets");sh.innerHTML="";
   sc.pages.forEach((p,pi)=>{
     const w=document.createElement("div");w.className="sheet";
@@ -1117,7 +1119,7 @@ function renderResult(){
   sh.querySelectorAll(".pm").forEach(b=>b.onclick=()=>{const el=document.getElementById("task-"+b.dataset.t);el.scrollIntoView({behavior:"smooth",block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")});
 
   const box=$("#tasks");box.innerHTML="";
-  const order=sc.tasks.map((t,i)=>i).sort((a,b)=>(stat(sc.tasks[b])==="check")-(stat(sc.tasks[a])==="check"));
+  const order=orderIdx(sc.tasks);
   order.forEach(i=>{
     const t=sc.tasks[i],s=stat(t);
     const d=document.createElement("div");d.className="task"+(s==="check"?" chk":"");d.id="task-"+i;
