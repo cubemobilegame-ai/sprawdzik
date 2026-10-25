@@ -1317,6 +1317,8 @@ Rules:
   Language mistakes (spelling, grammar, agreement, accents) LOWER the score only slightly: a few isolated mistakes cost nothing or at most half a point; only many mistakes, or mistakes that make the text hard to understand, may cost more — never more than about 20% of the task's points. NEVER subtract one point per mistake. If the key gives explicit criteria, follow them.
   Still list each concrete language mistake in "items" so the teacher sees them; "points" is your suggested score.
 - Whenever a task loses points (partial or wrong), add "items" with each concrete mistake: {"n":"","answer":"the wrong fragment exactly as written","correct":"the corrected fragment"} (max 5, e.g. {"answer":"hablador","correct":"habladora"}). For a single short answer "answer"/"correct" are enough.
+- CLEAR mistakes are NOT doubts: deduct their points automatically (the item's value; half for a one-letter slip) with status "partial" or "wrong". An empty blank is simply wrong (0 for that item, "answer":"") — never a doubt and never a question to the teacher. Add "doubt":true to an item ONLY when you cannot read that item with certainty, together with "spot":[x,y,w,h] — a tight box around exactly that word on the page. Use task status "check" only if at least one item has "doubt":true, or for the other reasons listed below.
+- Fields for the student's name, surname, class, date or signature are NOT tasks and NOT items — ignore them completely.
 - Points: use "max" from the key; otherwise points printed on the sheet (e.g. "…/6p"); otherwise 1 per task. Always respect the task's maximum.
 - Tasks made of several items (translations, blanks, matching pairs, true/false rows): each item is worth max ÷ number of items. A correct item earns its full value; a wrong or missing item earns 0; an item with only a small slip (one wrong or missing letter, the right word clearly intended) earns HALF its value${S.spell?" (spelling counts: such an item earns 0)":""}. Add up the items — e.g. 6 items for 6 points, 5 correct and 1 with a typo = 5.5 points.
 - Ignore any score or grade already written by a teacher.
@@ -1393,7 +1395,7 @@ async function runJob(job){
       const st=["ok","partial","wrong","check"].includes(t.status)?t.status:"check";
       const b=Array.isArray(t.box)&&t.box.length===4?t.box.map(v=>Math.min(1,Math.max(0,+v||0))):null;
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
-      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),sug:pts,options:cleanOptions(t.options,max),content:String(t.content||"").slice(0,8),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50)})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
+      return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),sug:pts,options:cleanOptions(t.options,max),content:String(t.content||"").slice(0,8),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50),doubt:!!(x&&x.doubt),spot:Array.isArray(x&&x.spot)&&x.spot.length===4?x.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
     });
     tasks.forEach(fixIllegible);
     if(!tasks.length&&r.quality==="not_test"){removeJob(job);toast("Pominięto zdjęcie bez pracy ucznia");renderSeries();markHook(job);return}
@@ -1559,7 +1561,7 @@ function fixHtml(t){
   if(t.items&&t.items.length){
     const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
     const its=t.items.filter(x=>!eqI(x.answer,x.correct));
-    if(its.length)return `<div class="fix col">${t.forceCheck&&t.question?`<div class="small warnc">${esc(t.question)}</div>`:""}${cnt}${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">brak</span>`,`<span class="goodh">${esc(x.correct)}</span>`];return `<div class="fixrow">${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}).join("")}${its.length>5?`<div class="small muted">i jeszcze ${its.length-5}</div>`:""}</div>`;
+    if(its.length)return `<div class="fix col">${t.forceCheck&&t.question?`<div class="small warnc">${esc(t.question)}</div>`:""}${cnt}${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">brak</span>`,`<span class="goodh">${esc(x.correct)}</span>`];const ty=x.answer&&x.correct&&norm(x.correct).length>2&&lev(norm(x.answer),norm(x.correct))===1;return `<div class="fixrow">${x.doubt&&!t.resolved&&t.status==="check"?`<span class="chip chk">?</span>`:""}${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b>${b}</b>${ty?`<span class="small halfc">literówka</span>`:""}</div>`}).join("")}${its.length>5?`<div class="small muted">i jeszcze ${its.length-5}</div>`:""}</div>`;
   }
   const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
   if(c){
@@ -1583,6 +1585,10 @@ function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
 const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/[\s.,;:!?()„”"'«»¿¡-]+/g," ").trim();
 function fixIllegible(t){
+  if(t.items){const junk=/^(podpis|imi[eę]|nazwisko|imi[eę] i nazwisko|klasa|data|signature|name|date)$/i,jn=/podpis|nazwisk|imi[eę]|signature|puste po/i;
+    const before=t.items.length;t.items=t.items.filter(x=>!junk.test(String(x.correct).trim())&&!jn.test(x.n));
+    t.items.forEach(x=>{if(/^(brak|puste|pusty|puste pole|empty|none|blank|—|-|\.\.\.|…)$/i.test(String(x.answer).trim())){x.answer="";x.doubt=false}});
+    if(before&&!t.items.length){t.items=null;t.points=t.max;t.status="ok";t.options=null;t.question="";t.reason=""}}
   const re=/nieczyteln|niewyraźn|illegible|unreadable|unclear|\?\?/i,ex=s=>String(s||"").replace(/^\s*(np\.|e\.g\.|eg\.)\s*/i,"");
   t.correct=ex(t.correct);let bad=[];
   if(t.items){t.items.forEach(x=>x.correct=ex(x.correct));bad=t.items.filter(x=>re.test(x.answer)||re.test(x.n));t.items=t.items.filter(x=>!bad.includes(x));if(!t.items.length)t.items=null}
@@ -1591,6 +1597,11 @@ function fixIllegible(t){
 }
 function applyRules(t){applyRules0(t);if(!t.resolved)t.sug=t.points}
 function applyRules0(t){
+  if(t.status==="check"&&!t.forceCheck&&t.items&&t.items.length&&!["two_marks","line"].includes(t.doubt)){
+    const dq=t.items.filter(x=>x.doubt&&x.answer);
+    if(!dq.length){t.status=t.points>=t.max?"ok":t.points>0?"partial":"wrong";t.options=null;t.question="";return}
+    if(dq[0].spot)t.spot=dq[0].spot;
+  }
   if(!S.accents&&t.items&&t.items.length&&t.points<t.max&&t.items.every(x=>x.answer&&x.correct&&strip(x.answer)===strip(x.correct))){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
   if(!S.accents){
     if(t.correct&&t.answer&&t.points<t.max&&strip(t.answer)===strip(t.correct)&&norm(t.answer)!==norm(t.correct)){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
