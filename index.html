@@ -265,6 +265,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .shutter{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#2DD4BF calc(var(--p,0) * 360deg),rgba(255,255,255,.35) 0)}
 .shutter::after{content:"";width:62px;height:62px;border-radius:50%;background:#fff;border:3px solid #000}
 .cam-fail{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:#fff;background:#0B0B1A;z-index:3}
+#resNext,#mkNext{white-space:nowrap;gap:6px;padding:0 10px}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -428,7 +429,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="section-title"><h3 id="tasksH">Do decyzji</h3><button class="link small" id="showAll"></button></div>
     <div class="small muted" id="noDoubts" hidden>Wszystko dobrze. Wynik jest gotowy do przepisania na kartkę.</div>
     <div class="tasks" id="tasks"></div>
-    <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext">Następna praca</button></div>
+    <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Skanuj następną</button></div>
   </section>
 
   <!-- QUICK REVIEW -->
@@ -823,7 +824,7 @@ function renderMark(){
   $("#mkNr").innerHTML=esc(jobName(j))+(S.dnr&&j.status==="done"?(j.res.dnr?' <span class="small muted">✎</span>':' <span class="chip chk">nr ?</span>'):"");
   const img=$("#mkTop");if(j.pages[0]&&img.getAttribute("src")!==j.pages[0].url)img.src=j.pages[0].url;
   $("#mkPrev").textContent=one?"Lista prac":"← Poprzednia";$("#mkPrev").disabled=!one&&i===0;
-  $("#mkNext").textContent=one?"Skanuj następną":i===L.length-1?"Gotowe ✓":"Następna →";
+  $("#mkNext").innerHTML=one?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Skanuj następną':i===L.length-1?"Gotowe ✓":"Następna praca →";
   $("#mkSpeak").hidden=!canVoice||j.status!=="done";$("#mkMore").hidden=j.status!=="done";
   const body=$("#mkBody");
   if(j.status!=="done"){
@@ -1325,6 +1326,7 @@ Rules:
 - For every task with status "check" ALSO give: "doubt": one of "illegible" (handwriting hard to read), "two_marks" (more than one option marked or unclear final choice), "line" (unclear matching line), "content" (reading is clear, grading of the content is uncertain), "other"; "question": one very short question in Polish for the teacher, max 7 words, answerable at a glance (e.g. "Czy nad „a” jest akcent?", "Które zakreślenie jest ostateczne: B czy C?", "Czy odpowiedź zawiera uzasadnienie?"); "options": 2–3 choices, most likely first, each {"label": Polish, max 3 words, "answer": the reading for that choice (short), "points": points that choice earns under the rules}; "spot": [x,y,w,h] tight box around the exact disputed letter, mark or line (fractions of the page).
 ${S.accents?"":"- Accents/diacritics do NOT count: never create a doubt only about a missing or unclear accent — treat the word as correct with full points."}
 - "answer": EXACT transcription of what the student wrote or marked, letter by letter, whatever language the student used (if the student wrote "hand" instead of "la mano", the answer is "hand"). Never add your own comments, descriptions or translations to it. Put any remark in "reason" instead. "correct": the expected answer (short).
+- Never write words like "nieczytelne", "illegible", "?" or a description into "answer", "items" or "n". If a word is unreadable, use status "check" with doubt "illegible" and a "spot" box instead. "n" is only the item label as printed (e.g. "(4)"), "correct" is the expected answer itself (no "np.", no examples).
 - If a blank or item is left empty or unanswered, use "" as its answer — never describe the picture, the item or the task instead.
 - Self-corrections: crossed-out, scribbled-over or struck-through text is NOT part of the answer — ignore it completely, even if it is illegible. If the student wrote another answer next to it, above it, below it or in the margin, that legible one is the final answer — grade ONLY it (it may be right or wrong). If there is ONLY a crossed-out answer and nothing written next to it, treat it as unanswered: answer "", 0 points for that item, status "wrong" (not "check"). Never transcribe the crossed-out text, never mark it as an error, and never use status "check" or doubt "illegible" because of a crossed-out word. Use "check" only if the FINAL (not crossed-out) answer itself is unreadable or there is no clear final answer.
 - Tasks with several blanks or numbered sub-answers (e.g. (1)…(9)): keep it ONE task, but add "items" listing ONLY the sub-answers that are wrong or doubtful: [{"n":"(4)","answer":"what student wrote","correct":"expected"}]. Do not list correct sub-answers. In that case set "answer" to "" and "correct" to "".
@@ -1393,6 +1395,7 @@ async function runJob(job){
       const conf=t.confidence==null?0.8:Math.min(1,Math.max(0,+t.confidence||0));
       return {nr:String(t.nr??""),type:String(t.type||""),page:Math.min(pages.length,Math.max(1,+t.page||1)),answer:String(t.answer??""),correct:String(t.correct||((S.key&&S.key.tasks.find(k=>norm(k.nr)===norm(t.nr)))||{}).answer||""),points:pts,max,status:(st!=="check"&&conf<0.85)?"check":st,conf,reason:String(t.reason||""),box:b,resolved:false,doubt:String(t.doubt||""),question:String(t.question||"").slice(0,90),sug:pts,options:cleanOptions(t.options,max),content:String(t.content||"").slice(0,8),items:Array.isArray(t.items)?t.items.slice(0,8).map(x=>({n:String(x&&x.n||"").slice(0,8),answer:String(x&&x.answer||"").slice(0,50),correct:String(x&&x.correct||"").slice(0,50)})).filter(x=>x.answer||x.correct):null,spot:Array.isArray(t.spot)&&t.spot.length===4?t.spot.map(v=>Math.min(1,Math.max(0,+v||0))):null};
     });
+    tasks.forEach(fixIllegible);
     if(!tasks.length&&r.quality==="not_test"){removeJob(job);toast("Pominięto zdjęcie bez pracy ucznia");renderSeries();markHook(job);return}
     tasks.forEach(applyRules);
     mergeIssues(r.test_issues);applyIssues(tasks);applyClassRules(tasks);
@@ -1556,7 +1559,7 @@ function fixHtml(t){
   if(t.items&&t.items.length){
     const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
     const its=t.items.filter(x=>!eqI(x.answer,x.correct));
-    if(its.length)return `<div class="fix col">${cnt}${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">brak</span>`,`<span class="goodh">${esc(x.correct)}</span>`];return `<div class="fixrow">${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}).join("")}${its.length>5?`<div class="small muted">i jeszcze ${its.length-5}</div>`:""}</div>`;
+    if(its.length)return `<div class="fix col">${t.forceCheck&&t.question?`<div class="small warnc">${esc(t.question)}</div>`:""}${cnt}${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">brak</span>`,`<span class="goodh">${esc(x.correct)}</span>`];return `<div class="fixrow">${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}).join("")}${its.length>5?`<div class="small muted">i jeszcze ${its.length-5}</div>`:""}</div>`;
   }
   const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
   if(c){
@@ -1579,6 +1582,13 @@ function lineHtml(t,s){const wrongish=s!=="ok"&&t.correct&&norm(t.correct)!==nor
 function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer=o.answer;t.choice=i;t.resolved=true}
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
 const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/[\s.,;:!?()„”"'«»¿¡-]+/g," ").trim();
+function fixIllegible(t){
+  const re=/nieczyteln|niewyraźn|illegible|unreadable|unclear|\?\?/i,ex=s=>String(s||"").replace(/^\s*(np\.|e\.g\.|eg\.)\s*/i,"");
+  t.correct=ex(t.correct);let bad=[];
+  if(t.items){t.items.forEach(x=>x.correct=ex(x.correct));bad=t.items.filter(x=>re.test(x.answer)||re.test(x.n));t.items=t.items.filter(x=>!bad.includes(x));if(!t.items.length)t.items=null}
+  if(re.test(t.answer)){t.answer="";bad.push({n:""})}
+  if(bad.length){t.status="check";t.forceCheck=true;t.doubt="illegible";t.options=null;const nn=bad.length===1&&/^\(?\d{1,2}[a-z]?\)?\.?$/i.test(String(bad[0].n).trim())?bad[0].n:"";t.question=nn?`Nieczytelne ${nn} – ile punktów?`:"Nieczytelny fragment – ile punktów?";t.reason="Nieczytelne pismo."}
+}
 function applyRules(t){applyRules0(t);if(!t.resolved)t.sug=t.points}
 function applyRules0(t){
   if(!S.accents&&t.items&&t.items.length&&t.points<t.max&&t.items.every(x=>x.answer&&x.correct&&strip(x.answer)===strip(x.correct))){t.points=t.max;t.status="ok";t.options=null;t.reason="Akcent nie liczony.";return}
@@ -1587,7 +1597,7 @@ function applyRules0(t){
     if(t.status==="check"&&t.options&&t.options.length>1&&t.options.every(o=>o.answer)&&new Set(t.options.map(o=>norm(o.answer))).size>1&&t.options.every(o=>strip(o.answer)===strip(t.options[0].answer))){t.points=Math.max(...t.options.map(o=>o.points),t.points);t.status=t.points>=t.max?"ok":"partial";t.options=null;t.reason="Akcent nie liczony.";return}
   }
   const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
-  if(t.status==="check"&&!hasFix(t)){t.status=t.points>=t.max?"ok":t.points>0?"partial":"wrong";t.options=null;t.question="";return}
+  if(t.status==="check"&&!hasFix(t)&&!t.forceCheck){t.status=t.points>=t.max?"ok":t.points>0?"partial":"wrong";t.options=null;t.question="";return}
   if(t.status==="check"&&!t.options){
     t.options=t.max>=1?[{label:"Dobrze",answer:"",points:t.max},{label:"Połowa",answer:"",points:Math.round(t.max)/2},{label:"Źle",answer:"",points:0}]:[{label:"Dobrze",answer:"",points:t.max},{label:"Źle",answer:"",points:0}];
     if(t.max<2)t.options=t.options.filter(o=>o.label!=="Połowa");
