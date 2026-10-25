@@ -163,6 +163,12 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .free{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--ok);background:var(--okbg);padding:3px 8px;border-radius:99px}
 .ser-grade{width:34px;height:34px;border-radius:50%;border:2px solid var(--pen);color:var(--pen);display:grid;place-items:center;font-family:var(--f-pen);font-size:22px;font-weight:700;flex:none}
 .ser-spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--blue);border-top-color:transparent;animation:spin .8s linear infinite;flex:none}
+.ctx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ctx label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-weight:600;min-width:0}
+.ctx select{appearance:auto;color:var(--ink)}
+@media (max-width:360px){.ctx{grid-template-columns:1fr}}
+.ser-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.copybox{white-space:pre-wrap;font-variant-numeric:tabular-nums;user-select:all;margin:0;font:600 14px/1.6 var(--f-body)}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -325,6 +331,21 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="bar"><button class="btn" id="resDone">Lista prac</button><button class="btn primary" id="resNext">Następna praca</button></div>
   </section>
 
+  <!-- QUICK REVIEW -->
+  <section class="view" id="v-review" hidden>
+    <div class="top"><button class="icon-btn" id="rvBack" aria-label="Wróć">←</button><span class="label">Do sprawdzenia · <span id="rvProg"></span></span><span style="width:40px"></span></div>
+    <h2 id="rvTitle" style="font-size:22px"></h2>
+    <div class="sheet" style="background:#fff"><img id="rvImg" alt="Wycinek odpowiedzi ucznia"></div>
+    <dl class="ans" style="margin:0"><dt>Uczeń</dt><dd class="hand" id="rvAns"></dd><dt>Poprawnie</dt><dd id="rvCor"></dd></dl>
+    <div class="reason" id="rvReason"></div>
+    <div class="bar" style="flex-wrap:wrap">
+      <button class="btn danger" id="rvBad">✗ Źle</button>
+      <button class="btn" id="rvHalf">½</button>
+      <button class="btn primary" id="rvOk">✓ Dobrze<span id="rvMax" hidden></span></button>
+      <button class="btn ghost" id="rvSkip" style="flex-basis:100%">Pomiń</button>
+    </div>
+  </section>
+
   <!-- SERIES -->
   <section class="view" id="v-series" hidden>
     <div class="top"><button class="icon-btn" id="serHome" aria-label="Wróć">←</button><span class="label">Seria prac</span><span style="width:40px"></span></div>
@@ -333,6 +354,11 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       <div class="chips" id="serGrades"></div>
     </div>
     <p class="small muted" style="margin:0">Skanuj kolejne prace bez czekania. Sprawdzanie trwa w tle, a wyniki pojawiają się na liście. Stuknij pracę, żeby zobaczyć szczegóły.</p>
+    <div class="ser-tools">
+      <button class="btn" id="serReview">Przejrzyj wątpliwości</button>
+      <button class="btn" id="serCopy">Kopiuj wyniki</button>
+    </div>
+    <div class="panel" id="serTextBox" hidden><div class="label">Wyniki do dziennika</div><pre class="copybox" id="serText"></pre><div class="small muted">Ułóż prace alfabetycznie przed skanowaniem, a kolejność zgodzi się z dziennikiem.</div></div>
     <div class="list" id="serList"></div>
     <button class="link small" id="serEnd" style="align-self:center;color:var(--pen)">Zakończ serię i usuń zdjęcia</button>
     <div class="panel" id="serConfirm" hidden>
@@ -446,11 +472,21 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     <div class="modal" role="dialog" aria-labelledby="setH">
       <h2 id="setH" style="font-size:22px">Ustawienia</h2>
       <div class="panel">
+        <div class="label">Profil (opcjonalnie)</div>
+        <div class="small muted">Domyślnie aplikacja sama rozpoznaje przedmiot i język kartki. Ustaw je, jeśli sprawdzasz głównie jeden przedmiot – odczyt będzie jeszcze dokładniejszy.</div>
+        <div class="ctx">
+          <label class="small" for="subjSel">Przedmiot<select class="field" id="subjSel"></select></label>
+          <label class="small" for="langSel">Język kartki<select class="field" id="langSel"></select></label>
+        </div>
+        <div class="small muted" id="ctxHint"></div>
+      </div>
+      <div class="panel">
         <div class="label">Skala ocen (od ilu % ocena)</div>
         <div id="scaleRows" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
       <div class="panel">
         <label class="switch"><span><b>Tryb dokładny (zalecany)</b><br><span class="small muted">Zadania, które nadal budzą wątpliwość, sprawdza dodatkowo mocniejszy model. Trwa trochę dłużej.</span></span><input type="checkbox" id="precise"></label>
+        <label class="switch"><span><b>Akcenty i znaki diakrytyczne się liczą</b><br><span class="small muted">np. á, ñ, ü, é, ą, ł – brak znaku to błąd w słowie</span></span><input type="checkbox" id="accents"></label>
         <label class="switch"><span><b>Ortografia się liczy</b><br><span class="small muted">Błąd w uzupełnianym słowie odejmuje punkt</span></span><input type="checkbox" id="spell"></label>
       </div>
       <div class="panel">
@@ -483,7 +519,7 @@ const $=s=>document.querySelector(s);
 const FREE=30;
 const DEFAULT_SCALE=[{g:"6",n:"celujący",min:96},{g:"5",n:"bardzo dobry",min:86},{g:"4",n:"dobry",min:71},{g:"3",n:"dostateczny",min:51},{g:"2",n:"dopuszczający",min:31},{g:"1",n:"niedostateczny",min:0}];
 const ls={get(k,d){try{const v=localStorage.getItem("spr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("spr_"+k,JSON.stringify(v))}catch(e){}}};
-const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),first:ls.get("first","complex"),spell:ls.get("spell",false),
+const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get("scale",DEFAULT_SCALE),precise:ls.get("precise",true),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","complex"),spell:ls.get("spell",false),
   mode:"student",pagesPer:ls.get("pagesPer",1),pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
 
 /* ---------- intro ---------- */
@@ -531,8 +567,94 @@ $("#changeCode").onclick=()=>askCode(false);
   if(s)S.sample=s;else $("#noAi").hidden=false;
 })();
 
+/* ---------- subjects & languages ---------- */
+const FL="Foreign-language test: grade the target-language form exactly (word choice, grammar form, articles, word order) as required by the key; accept answers that are fully correct even if worded differently from the key only for open answers.";
+const SUBJECTS=[
+ ["auto","Automatycznie",""],
+ ["wczesnoszkolna","Edukacja wczesnoszkolna (kl. 1–3)","Young children (age 7–9): large irregular letters, mirrored letters and digits (b/d, s, z, 3, 7), letters outside lines, inconsistent spacing. Read generously; be strict only about the skill the task tests."],
+ ["polski","Język polski","Polish language: spelling (ó/u, rz/ż, ch/h, ą/ę/om/em, ś/ź/ż, nie z…) and punctuation are often the tested skill — follow the key. For longer written answers grade content against the key criteria."],
+ ["matematyka","Matematyka","Mathematics: read digits, signs, fractions (horizontal or slanted bar), mixed numbers, decimal comma, powers, roots, units, geometry labels. Accept equivalent values (1/2 = 0,5 = 2/4) unless the key requires a specific form. When working (rozwiązanie) is required, give method points for correct reasoning even with an arithmetic slip, as the key allows; a bare correct result without required working gets partial credit."],
+ ["fizyka","Fizyka","Physics: check formula, substitution, calculation, unit and final value. Equivalent numeric forms are fine. A missing or wrong unit loses points only if the key says so — otherwise mention it in reason."],
+ ["chemia","Chemia","Chemistry: read formulas with subscripts, superscripts and charges carefully (H2O, CO2, SO4²⁻, Fe³⁺); element symbols are case-sensitive (Co ≠ CO). In reaction equations check substrates, products and coefficients (balancing). Names of compounds: accept correct systematic and common names."],
+ ["biologia","Biologia","Biology: names of organs, processes, organisms; labelled diagrams (match each label line to its structure); accept correct synonyms and Latin/Polish name variants."],
+ ["przyroda","Przyroda","Nature science (grades 4): simple facts about plants, animals, weather, maps; labelled pictures; accept everyday synonyms."],
+ ["geografia","Geografia","Geography: place names (accept common variants), marks on maps (letters, numbers, shaded areas), map scale calculations, climate charts, coordinates (° ′ N/S/E/W)."],
+ ["historia","Historia","History: dates, centuries in Roman numerals (XV w.), names of people, events and places (accept unambiguous variants and spellings), chronological ordering and timeline tasks."],
+ ["wos","Wiedza o społeczeństwie","Civics: institutions, rights, procedures; accept correct paraphrases of definitions."],
+ ["edb","Edukacja dla bezpieczeństwa","Safety education: first-aid procedures and order of steps, emergency numbers (112, 999, 998, 997); order of steps matters when the task asks for it."],
+ ["informatyka","Informatyka","Computer science: algorithms, pseudo-code or code written by hand — judge logic, not handwriting of symbols; binary/decimal conversions; file and program names."],
+ ["angielski","Język angielski",FL+" English: British and American spelling both accepted; contractions equal full forms unless the key forbids; capital I; irregular verb forms must be exact."],
+ ["niemiecki","Język niemiecki",FL+" German: capitalisation of nouns is part of spelling; umlauts ä ö ü and ß; articles der/die/das and case endings must be exact."],
+ ["hiszpanski","Język hiszpański",FL+" Spanish: accents (á é í ó ú), ñ, ü, ¿ ¡; verb conjugation endings and gender/number agreement must be exact."],
+ ["francuski","Język francuski",FL+" French: accents (é è ê ë à â ç î ô û ù), elision with apostrophe (l', j'), gender and agreement must be exact."],
+ ["rosyjski","Język rosyjski",FL+" Russian, Cyrillic handwriting (often cursive): distinguish и/п/н, т written like m, д with descender, ш/щ, ь/ъ/ы, з/э, в/б; ё may be written as е."],
+ ["ukrainski","Język ukraiński",FL+" Ukrainian, Cyrillic handwriting (often cursive): distinguish і/ї/и, є/е, ґ/г, ш/щ, ь; apostrophe (’) is part of spelling."],
+ ["wloski","Język włoski",FL+" Italian: accents (à è é ì ò ù), double consonants, articles and agreement must be exact."],
+ ["religia","Religia / etyka","Religion or ethics: names, concepts, short explanations; accept correct paraphrases."],
+ ["muzyka","Muzyka","Music: note names, durations, symbols, composers and terms (accept Polish and Italian terms)."],
+ ["plastyka","Plastyka","Art: names of techniques, colours, artists, art periods; accept correct variants."],
+ ["technika","Technika","Technology: road signs and rules, technical drawing, materials, tools; check numbers and units."],
+ ["inny","Inny przedmiot",""]
+];
+const LANGS=[["auto","Automatycznie"],["pl","polski"],["en","angielski"],["de","niemiecki"],["es","hiszpański"],["fr","francuski"],["ru","rosyjski"],["uk","ukraiński"],["it","włoski"]];
+const LANG_EN={pl:"Polish",en:"English",de:"German",es:"Spanish",fr:"French",ru:"Russian",uk:"Ukrainian",it:"Italian"};
+function effSubject(){return S.subject!=="auto"?S.subject:(S.key&&S.key.subject)||"auto"}
+function effLang(){return S.lang!=="auto"?S.lang:(S.key&&S.key.lang)||"auto"}
+function contextRules(){
+  const sj=SUBJECTS.find(x=>x[0]===effSubject()),lg=effLang();
+  const out=[];
+  out.push(sj&&sj[0]!=="auto"?`Subject: ${sj[1]}. ${sj[2]}`:"Subject: detect it from the sheet and apply that subject's usual grading conventions (Polish primary school, grades 1–8).");
+  out.push(lg!=="auto"?`The sheet is written in ${LANG_EN[lg]} (the student may mix in Polish).`:"Detect the language of the sheet (it may be Polish, English, German, Spanish, French, Russian, Ukrainian, Italian or another); read the student's answers in that language.");
+  out.push(S.accents?"Diacritics and accents count: a missing or wrong accent/diacritic (á, ñ, ü, ä, é, ç, ą, ę, ł, ó, ś, ż, ё, ї…) makes the word misspelled.":"Ignore missing accents/diacritics when scoring, but mention them in reason.");
+  return out.join("\n");
+}
+function renderContext(){
+  $("#subjSel").value=S.subject;$("#langSel").value=S.lang;
+  const sj=SUBJECTS.find(x=>x[0]===effSubject()),lg=effLang();
+  $("#ctxHint").textContent=S.key&&(S.subject==="auto"||S.lang==="auto")&&(S.key.subject!=="auto"||S.key.lang!=="auto")?`Rozpoznane ze wzoru: ${[S.subject==="auto"&&sj&&sj[0]!=="auto"?sj[1]:"",S.lang==="auto"&&lg!=="auto"?"język "+(LANGS.find(l=>l[0]===lg)||["",""])[1]:""].filter((v,i,a)=>v&&a.findIndex(x=>x.toLowerCase()===v.toLowerCase())===i).join(", ")}`:"";
+}
+$("#subjSel").innerHTML=SUBJECTS.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join("");
+$("#langSel").innerHTML=LANGS.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join("");
+$("#subjSel").onchange=e=>{S.subject=e.target.value;ls.set("subject",S.subject);
+  const auto={angielski:"en",niemiecki:"de",hiszpanski:"es",francuski:"fr",rosyjski:"ru",ukrainski:"uk",wloski:"it"}[S.subject];
+  if(auto&&S.lang==="auto"){S.lang=auto;ls.set("lang",S.lang)}renderContext()};
+$("#langSel").onchange=e=>{S.lang=e.target.value;ls.set("lang",S.lang);renderContext()};
+
+/* ---------- results to class register & quick review ---------- */
+function resultsText(){
+  return S.jobs.map(j=>{if(j.status!=="done")return `${j.n}. —`;const r=calc(j.res);return `${j.n}. ${fmt(r.pts)}/${fmt(r.max)} pkt (${r.pct}%) – ${r.grade.g}`}).join("\n");
+}
+$("#serCopy").onclick=()=>{
+  const t=resultsText();$("#serText").textContent=t;
+  const show=()=>{$("#serTextBox").hidden=false;const r=document.createRange();r.selectNodeContents($("#serText"));const s=getSelection();s.removeAllRanges();s.addRange(r)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>{toast("Wyniki skopiowane");$("#serTextBox").hidden=false},show);else show();
+};
+let RV={items:[],i:0,url:null};
+function reviewItems(){const out=[];S.jobs.forEach(j=>{if(j.status==="done")j.res.tasks.forEach(t=>{if(stat(t)==="check")out.push({j,t})})});return out}
+async function openReview(){RV.items=reviewItems();RV.i=0;if(!RV.items.length){toast("Brak wątpliwości do przejrzenia");return}show("review");renderReview()}
+async function renderReview(){
+  if(RV.url){URL.revokeObjectURL(RV.url);RV.url=null}
+  const left=RV.items.filter(o=>stat(o.t)==="check");
+  if(RV.i>=RV.items.length){if(RV.url)URL.revokeObjectURL(RV.url);toast(left.length?`Pominięto: ${left.length}`:"Wszystkie wątpliwości przejrzane");renderSeries();show("series");return}
+  const {j,t}=RV.items[RV.i];
+  $("#rvProg").textContent=`${RV.i+1} z ${RV.items.length}`;
+  $("#rvTitle").textContent=`Praca ${j.n} · zadanie ${t.nr}`;
+  $("#rvAns").textContent=t.answer||"—";$("#rvCor").textContent=t.correct||"—";
+  $("#rvReason").textContent=t.reason||"Niska pewność odczytu.";
+  $("#rvMax").textContent=fmt(t.max);$("#rvHalf").hidden=t.max<1;
+  const img=$("#rvImg");img.removeAttribute("src");
+  try{if(t.box){const b=await crop(j.res.pages[t.page-1].blob,t.box);RV.url=URL.createObjectURL(b);img.src=RV.url}else img.src=j.res.pages[t.page-1].url}catch(e){}
+}
+function rvSet(p){const {t}=RV.items[RV.i];t.points=p;t.resolved=true;RV.i++;renderReview()}
+$("#rvOk").onclick=()=>rvSet(RV.items[RV.i].t.max);
+$("#rvBad").onclick=()=>rvSet(0);
+$("#rvHalf").onclick=()=>{const t=RV.items[RV.i].t;rvSet(Math.round(t.max)/2)};
+$("#rvSkip").onclick=()=>{RV.i++;renderReview()};
+$("#rvBack").onclick=()=>{if(RV.url)URL.revokeObjectURL(RV.url);RV.url=null;renderSeries();show("series")};
+$("#serReview").onclick=openReview;
+
 /* ---------- views ---------- */
-const views=["home","capture","work","result","key","plan","more","doc","series"];
+const views=["home","capture","work","result","key","plan","more","doc","series","review"];
 const TABS=["home","plan","more"];
 function show(v){
   views.forEach(n=>$("#v-"+n).hidden=n!==v);$("#v-"+v).scrollTop=0;
@@ -594,7 +716,7 @@ function renderHome(){
   $("#keyDot").classList.toggle("on",!!k);
   $("#keyTitle").textContent=k?`Wzór: ${k.title||"sprawdzian"}`:"Bez wzoru odpowiedzi";
   $("#keyDesc").textContent=k?`${k.tasks.length} zadań · ${fmt(k.tasks.reduce((a,t)=>a+(+t.max||0),0))} pkt · stron: ${k.pages||1}. Każda praca jest porównywana z tym wzorem.`:"Aplikacja sama oceni poprawność. Dla największej pewności zeskanuj najpierw swój wzór (klucz) z poprawnymi odpowiedziami.";
-  $("#keyBtn").textContent=k?"Zmień wzór":"Zeskanuj wzór";
+  $("#keyBtn").textContent=k?"Zmień wzór":"Zeskanuj wzór";renderContext();
   document.querySelectorAll("[data-pg]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.pg===S.pagesPer));
   $("#keyClear").hidden=!k;
   const nj=S.jobs?S.jobs.length:0;
@@ -605,6 +727,7 @@ function renderHome(){
 
 /* ---------- privacy: memory only ---------- */
 function wipe(){
+  try{$("#serTextBox").hidden=true;$("#serText").textContent=""}catch(e){}
   if(S.jobs){S.jobs.forEach(j=>{try{j.ctl.abort()}catch(e){}j.pages.forEach(p=>URL.revokeObjectURL(p.url))});S.jobs.length=0;clearInterval(serTimer)}
   if(S.last){S.last.pages.forEach(p=>p.url&&URL.revokeObjectURL(p.url));S.last=null}
   S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
@@ -693,7 +816,8 @@ function errText(e){
 }
 
 /* ---------- prompts ---------- */
-function keyPrompt(n){return `You are reading the ANSWER KEY (the teacher's model solution) of a school test or quiz, photographed with a phone. There ${n>1?`are ${n} pages, in order`:"is 1 page"}. The test is most likely in Polish.
+function keyPrompt(n){return `You are reading the ANSWER KEY (the teacher's model solution) of a school test or quiz, photographed with a phone. There ${n>1?`are ${n} pages, in order`:"is 1 page"}.
+${contextRules()}
 Extract every task and sub-task in reading order. For each give:
 - "nr": the number as printed ("1", "2a", "3.1")
 - "type": one of "abcd" (multiple choice), "tf" (true/false), "match" (connect with lines), "fill" (fill in missing words), "open" (open answer), "other"
@@ -701,12 +825,14 @@ Extract every task and sub-task in reading order. For each give:
 - "answer": the correct answer. Multiple choice: the letter(s). Matching: pairs like "1-C, 2-A". Fill-in: the words in order separated by " | ". Open: the key points a full answer must contain.
 - "max": points for the task as printed (e.g. "(2 pkt)", "/3"); if not printed use 1.
 Also "title": a short name of the test (subject + topic) if visible, else "".
-Reply with only JSON: {"title":"...","tasks":[{"nr":"1","type":"abcd","question":"...","answer":"B","max":1}]}`}
+Also "subject": one of ${JSON.stringify(SUBJECTS.map(x=>x[0]).filter(x=>x!=="auto"))} and "language": one of ${JSON.stringify(Object.keys(LANG_EN))}.
+Reply with only JSON: {"title":"...","subject":"matematyka","language":"pl","tasks":[{"nr":"1","type":"abcd","question":"...","answer":"B","max":1}]}`}
 
 function studentPrompt(n){
   const key=S.key?`ANSWER KEY prepared by the teacher (authoritative, grade against it):\n${JSON.stringify(S.key.tasks)}\n`:`There is NO answer key. Decide correctness yourself from subject knowledge at the appropriate school level. When you are not fully sure what the correct answer is, use status "check".\n`;
-  return `You are an experienced Polish school teacher grading ONE student's paper test, photographed with a phone. There ${n>1?`are ${n} images, pages 1..${n} of the same work, in order`:"is 1 image"}.
+  return `You are an experienced teacher in a Polish primary school grading ONE student's paper test, photographed with a phone. There ${n>1?`are ${n} images, pages 1..${n} of the same work, in order`:"is 1 image"}.
 ${key}
+${contextRules()}
 Method (follow strictly, task by task):
 1. Locate the task and the student's answer area.
 2. Transcribe exactly what the student wrote or marked, letter by letter, before judging anything. Do not "autocorrect" the student's words.
@@ -739,7 +865,7 @@ async function readKey(){
   try{
     const r=await S.sample.json(keyPrompt(S.pages.length),{images:S.pages.map(p=>p.blob),signal:S.ctl.signal,modelTier:S.precise?"complex":"default",cache:false});
     if(!r||!Array.isArray(r.tasks)||!r.tasks.length)throw{code:"invalid_json"};
-    S.draftKey={pages:S.pages.length,title:String(r.title||""),tasks:r.tasks.map(t=>({nr:String(t.nr??""),type:String(t.type||"other"),question:String(t.question||""),answer:String(t.answer||""),max:Math.max(0.5,+t.max||1)}))};
+    S.draftKey={pages:S.pages.length,subject:SUBJECTS.some(x=>x[0]===r.subject)?r.subject:"auto",lang:LANG_EN[r.language]?r.language:"auto",title:String(r.title||""),tasks:r.tasks.map(t=>({nr:String(t.nr??""),type:String(t.type||"other"),question:String(t.question||""),answer:String(t.answer||""),max:Math.max(0.5,+t.max||1)}))};
     S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
     renderKey();show("key");
   }catch(e){const m=errText(e);if(m)toast(m);show(S.pages.length?"capture":"home")}
@@ -759,7 +885,7 @@ function renderKey(){
     box.appendChild(d);
   });
 }
-$("#keySave").onclick=()=>{S.key=S.draftKey;S.draftKey=null;ls.set("key",S.key);S.pagesPer=Math.min(4,S.key.pages||1);ls.set("pagesPer",S.pagesPer);show("home");renderHome();toast("Wzór zapisany. Skanuj prace uczniów.")};
+$("#keySave").onclick=()=>{S.key=S.draftKey;S.draftKey=null;ls.set("key",S.key);S.pagesPer=Math.min(4,S.key.pages||1);ls.set("pagesPer",S.pagesPer);show("home");renderHome();S.mode="student";toast("Wzór zapisany. Skanuj prace uczniów.")};
 $("#keyRetake").onclick=()=>{S.draftKey=null;S.mode="key";openCamera()};
 
 /* ---------- grade work: series queue (scan next while previous ones are graded) ---------- */
@@ -809,6 +935,9 @@ function renderSeries(){
   $("#serStat").textContent=[pend?`w toku: ${pend}`:"wszystkie sprawdzone",avg!=null?`średnio ${avg}%`:"",avgSec!=null?`ok. ${avgSec} s na pracę`:""].filter(Boolean).join(" · ");
   const dist={};stats.forEach(r=>dist[r.grade.g]=(dist[r.grade.g]||0)+1);
   $("#serGrades").innerHTML=Object.keys(dist).sort((a,b)=>b.localeCompare(a)).map(g=>`<span class="chip ${+g>=3?"ok":+g===2?"chk":"bad"}">ocena ${esc(g)}: ${dist[g]}</span>`).join("");
+  const nCheck=S.jobs.reduce((a,j)=>a+(j.status==="done"?j.res.tasks.filter(t=>stat(t)==="check").length:0),0);
+  $("#serReview").textContent=nCheck?`Przejrzyj wątpliwości (${nCheck})`:"Brak wątpliwości";$("#serReview").disabled=!nCheck;
+  $("#serCopy").disabled=!done.length;
   const list=$("#serList");list.innerHTML="";
   [...S.jobs].reverse().forEach(j=>{
     const b=document.createElement("button");b.className="li";
@@ -853,6 +982,7 @@ async function verify(tasks,signal,tier,onlyCheck,pages,sink){
   const list=pick.map((o,j)=>{const k=keyOf(o.t.nr);return `Image ${j+1} → task "${o.t.nr}" (type ${o.t.type||"?"}, max ${o.t.max} pts). Expected answer: ${JSON.stringify(k?k.answer:o.t.correct)}${k&&k.question?` (question: ${JSON.stringify(k.question)})`:""}.`}).join("\n");
   const prompt=`You are double-checking automatic grading of a student's handwritten test. Each image is a CLOSE-UP crop of one task's answer area (crop may include neighbouring lines; focus on the named task).
 ${list}
+${contextRules()}
 For each image, read the student's answer again INDEPENDENTLY, letter by letter, as if seeing it for the first time. Consider ambiguous letters carefully, crossed-out text, which option is circled, where each drawn line ends.
 ${S.spell?"Spelling mistakes cost the point in fill-in tasks.":"Ignore spelling mistakes for scoring (mention them in reason)."}
 Then score it against the expected answer (half points allowed for open answers).
@@ -976,8 +1106,9 @@ function renderScale(){
 }
 function renderFirst(){document.querySelectorAll("[data-first]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.first===S.first))}
 document.querySelectorAll("[data-first]").forEach(b=>b.onclick=()=>{S.first=b.dataset.first;ls.set("first",S.first);renderFirst()});
-$("#openSettings").onclick=()=>{renderScale();renderFirst();$("#precise").checked=S.precise;$("#spell").checked=S.spell;$("#setSheet").hidden=false};
+$("#openSettings").onclick=()=>{renderScale();renderContext();renderFirst();$("#precise").checked=S.precise;$("#accents").checked=S.accents;$("#spell").checked=S.spell;$("#setSheet").hidden=false};
 $("#precise").onchange=e=>{S.precise=e.target.checked;ls.set("precise",S.precise)};
+$("#accents").onchange=e=>{S.accents=e.target.checked;ls.set("accents",S.accents)};
 $("#spell").onchange=e=>{S.spell=e.target.checked;ls.set("spell",S.spell)};
 $("#resetScale").onclick=()=>{S.scale=JSON.parse(JSON.stringify(DEFAULT_SCALE));ls.set("scale",S.scale);renderScale()};
 $("#setClose").onclick=()=>{$("#setSheet").hidden=true;renderHome();if(S.last&&!$("#v-result").hidden)renderResult()};
@@ -1036,7 +1167,7 @@ $("#docBack").onclick=()=>show("more");
 $("#copyMail").onclick=()=>{navigator.clipboard?.writeText("cubemobilegame@gmail.com").then(()=>toast("Skopiowano adres"),()=>{const r=document.createRange();r.selectNodeContents($("#mail"));const s=getSelection();s.removeAllRanges();s.addRange(r)})};
 $("#wipeAll").onclick=()=>$("#wipeConfirm").hidden=false;
 $("#wipeNo").onclick=()=>$("#wipeConfirm").hidden=true;
-$("#wipeYes").onclick=()=>{wipe();S.key=null;S.scale=JSON.parse(JSON.stringify(DEFAULT_SCALE));S.precise=false;S.spell=false;["key","scale","precise","spell","theme"].forEach(k=>ls.set(k,null));try{["key","scale","precise","spell","theme"].forEach(k=>localStorage.removeItem("spr_"+k))}catch(e){}applyTheme();renderMore();$("#wipeConfirm").hidden=true;toast("Dane usunięte")};
+$("#wipeYes").onclick=()=>{wipe();S.key=null;S.scale=JSON.parse(JSON.stringify(DEFAULT_SCALE));S.precise=true;S.spell=false;S.accents=true;S.subject="auto";S.lang="auto";["key","scale","precise","spell","theme","accents","subject","lang"].forEach(k=>ls.set(k,null));try{["key","scale","precise","spell","theme","accents","subject","lang"].forEach(k=>localStorage.removeItem("spr_"+k))}catch(e){}applyTheme();renderMore();$("#wipeConfirm").hidden=true;toast("Dane usunięte")};
 
 /* ---------- demo ---------- */
 async function demoSheet(){
