@@ -529,6 +529,9 @@ intro.addEventListener("click",endIntro);
 setTimeout(endIntro,matchMedia("(prefers-reduced-motion: reduce)").matches?600:1900);
 
 /* ---------- AI: Claude app (window.claude) or own server (/api/ai) ---------- */
+const TIERMAP={complex:"default",default:"quick"};
+const viaClaude=c=>({json:(p,o={})=>{const {costSink,...rest}=o;return c.json(p,{...rest,modelTier:TIERMAP[o.modelTier]||o.modelTier})},limits:()=>c.limits()});
+
 S.cost=0;
 function getCode(){return ls.get("code","")}
 function blobToB64(b){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(b)})}
@@ -562,7 +565,7 @@ $("#codeSave").onclick=()=>{ls.set("code",$("#codeInput").value.trim());$("#code
 $("#changeCode").onclick=()=>askCode(false);
 (async()=>{
   let s=null;
-  try{if(window.claude){const c=await window.claude.use("sample");const lim=c&&await c.limits().catch(()=>null);if(lim&&lim.images){s=c;S.maxImg=Math.max(1,lim.images.maxCount||5)}}}catch(e){}
+  try{if(window.claude){const c=await window.claude.use("sample");const lim=c&&await c.limits().catch(()=>null);if(lim&&lim.images){s=viaClaude(c);S.maxImg=Math.max(1,lim.images.maxCount||5)}}}catch(e){}
   if(!s&&location.protocol.startsWith("http")){s=serverAI;S.maxImg=4;S.server=true;$("#changeCode").hidden=false;if(!getCode())setTimeout(()=>askCode(false),2600)}
   if(s)S.sample=s;else $("#noAi").hidden=false;
 })();
