@@ -142,10 +142,14 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 /* sheets */
 .overlay{position:absolute;inset:0;background:var(--shade);display:flex;align-items:flex-end;z-index:20}
 .modal{width:100%;max-height:92%;overflow-y:auto;background:var(--paper);border-radius:24px 24px 0 0;display:flex;flex-direction:column;gap:14px;padding-block:20px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
-.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.plan{border:2px solid var(--line);border-radius:16px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;background:var(--surface)}
+.plans{display:flex;flex-direction:column;gap:10px}
+.plan{border:2px solid var(--line);border-radius:16px;padding:14px;text-align:left;display:flex;align-items:center;gap:12px;background:var(--surface);width:100%}
 .plan.sel{border-color:var(--blue)}
-.plan b{font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.plan .pinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.plan .pname{font-family:var(--f-display);font-size:18px;font-weight:700;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.plan .price{font-family:var(--f-display);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.pop{font-family:var(--f-body);font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--ok);background:var(--okbg);padding:2px 8px;border-radius:99px}
+.pop.cur{color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent)}
 .save{font-size:11px;font-weight:700;color:var(--ok)}
 .feat{display:flex;flex-direction:column;gap:6px;font-size:14px;padding:0;margin:0;list-style:none}
 .feat li{display:flex;gap:8px}
@@ -216,7 +220,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
 /* intro */
 .intro{position:fixed;inset:0;z-index:50;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .4s}
-.intro video{display:block;width:100%;max-width:432px;height:auto;max-height:100%;aspect-ratio:1/2;object-fit:contain;background:#000}
+.intro video{display:block;width:60%;max-width:260px;height:auto;max-height:60%;aspect-ratio:1/2;object-fit:contain;background:#000;transform:translateY(10%)}
 .cube{width:64px;height:64px;position:relative;transform-style:preserve-3d;animation:cube 1.6s cubic-bezier(.6,.1,.3,1) forwards}
 .cube span{position:absolute;inset:0;border:2px solid #2DD4BF;background:rgba(45,212,191,.12)}
 .cube span:nth-child(1){transform:translateZ(32px)}
@@ -283,7 +287,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
     </div>
 
     <div class="panel" id="quotaPanel">
-      <div class="row"><div class="grow small"><b id="quotaText"></b></div><button class="link small" id="openPay">Przejdź na Pro</button></div>
+      <div class="row"><div class="grow small"><b id="quotaText"></b></div><button class="link small" id="openPay">Wybierz plan</button></div>
       <div class="meter"><i id="quotaBar"></i></div>
     </div>
 
@@ -385,26 +389,22 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
         <div class="grow"><div class="label">Twój plan</div><div class="big" id="pnName">Free</div></div>
         <span class="badge" id="pnBadge">FREE</span>
       </div>
-      <div id="pnFree">
-        <div class="small" style="margin-bottom:8px"><b id="pnQuota"></b></div>
-        <div class="meter"><i id="pnBar"></i></div>
-      </div>
+      <div class="small"><b id="pnQuota"></b></div>
+      <div class="meter"><i id="pnBar"></i></div>
       <div class="small muted" id="pnProInfo" hidden></div>
     </div>
-    <div id="pnBuy" style="display:flex;flex-direction:column;gap:14px">
-      <ul class="feat"><li>Nielimitowane skanowanie prac</li><li>Wzory odpowiedzi do każdego sprawdzianu</li><li>Tryb dokładny dla trudnego pisma</li><li>7 dni za darmo, potem wybrany plan</li></ul>
-      <div class="plans">
-        <button class="plan" data-plan="m"><span class="small muted">Miesięcznie</span><b>9,99 zł</b><span class="small muted">co miesiąc</span></button>
-        <button class="plan sel" data-plan="y"><span class="small muted">Rocznie</span><b>79 zł</b><span class="save">6,58 zł / mies. · oszczędzasz 34%</span></button>
-      </div>
-      <button class="btn primary" id="pnBuyBtn">Wypróbuj 7 dni za darmo</button>
-      <p class="small muted" style="margin:0">Płatność obsługuje Google Play. Po okresie próbnym subskrypcja odnawia się automatycznie. Możesz ją anulować w każdej chwili, najpóźniej 24 godziny przed odnowieniem. Ceny zawierają VAT.</p>
+    <div class="panel" id="pnTopup" hidden>
+      <div class="row"><div class="grow"><b>Doładowanie +100 stron</b><br><span class="small muted">Na sezon sprawdzianów, ważne do końca miesiąca</span></div><button class="btn" id="topupBtn">4,99 zł</button></div>
     </div>
+    <div class="label" id="pnChooseLbl">Wybierz plan</div>
+    <div class="plans" id="plansMain"></div>
+    <button class="btn primary" id="pnBuyBtn">Wypróbuj 7 dni za darmo</button>
+    <p class="small muted" style="margin:0">Płatność co miesiąc przez Google Play, bez zobowiązań. Po 7 dniach próbnych subskrypcja odnawia się co miesiąc. Anulujesz ją albo zmienisz plan w każdej chwili. Skan wzoru odpowiedzi jest zawsze bezpłatny. Ceny zawierają VAT.</p>
     <div class="list">
       <button class="li" id="restoreBtn"><span class="ic">↻</span><span class="grow">Przywróć zakupy</span></button>
       <a class="li" style="color:inherit;text-decoration:none" href="https://play.google.com/store/account/subscriptions" target="_blank" rel="noopener"><span class="ic">⚙</span><span class="grow">Zarządzaj subskrypcją w Google Play</span><span class="chev">↗</span></a>
     </div>
-    <p class="small muted" style="margin:0" id="demoNote">To podgląd: zakup włącza Pro tylko na tym urządzeniu, bez płatności.</p>
+    <p class="small muted" style="margin:0" id="demoNote">To podgląd: zakup włącza plan tylko na tym urządzeniu, bez płatności.</p>
     <button class="btn ghost" id="pnCancelDemo" hidden>Wróć do planu Free (podgląd)</button>
   </section>
 
@@ -456,15 +456,12 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 
   <div class="overlay" id="paySheet" hidden>
     <div class="modal" role="dialog" aria-labelledby="payH">
-      <h2 id="payH" style="font-size:24px">EduSkan Pro</h2>
-      <p class="muted" style="margin:0" id="payLead">Wykorzystałeś 30 darmowych skanów. Przejdź na Pro i sprawdzaj bez limitu.</p>
-      <ul class="feat"><li>Nielimitowane skanowanie prac</li><li>Wzory odpowiedzi do każdego sprawdzianu</li><li>Tryb dokładny dla trudnego pisma</li></ul>
-      <div class="plans">
-        <button class="plan" data-plan="m"><span class="small muted">Miesięcznie</span><b>9,99 zł</b><span class="small muted">co miesiąc</span></button>
-        <button class="plan sel" data-plan="y"><span class="small muted">Rocznie</span><b>79 zł</b><span class="save">6,58 zł / mies. · oszczędzasz 34%</span></button>
-      </div>
+      <h2 id="payH" style="font-size:24px">Sprawdzaj dalej</h2>
+      <p class="muted" style="margin:0" id="payLead"></p>
+      <button class="btn" id="topupBtn2" hidden>Doładuj +100 stron · 4,99 zł</button>
+      <div class="plans" id="plansSheet"></div>
       <button class="btn primary" id="buyBtn">Wypróbuj 7 dni za darmo</button>
-      <p class="small muted" style="margin:0">Płatność obsługuje Google Play. Subskrypcję anulujesz w każdej chwili. W tym podglądzie przycisk tylko włącza Pro, bez płatności.</p>
+      <p class="small muted" style="margin:0">Płatność co miesiąc przez Google Play, bez zobowiązań. W tym podglądzie przycisk tylko włącza plan, bez płatności.</p>
       <button class="btn ghost" id="payClose">Nie teraz</button>
     </div>
   </div>
@@ -714,11 +711,11 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const fmt=n=>(Math.round(n*2)/2).toString().replace(".",",");
 
 function renderHome(){
-  $("#planBadge").textContent=S.pro?"PRO":"FREE";$("#planBadge").classList.toggle("pro",S.pro);
-  $("#quotaPanel").hidden=S.pro;
-  const left=Math.max(0,FREE-S.used);
-  $("#quotaText").textContent=left>0?`Zostało ${left} z ${FREE} darmowych skanów`:"Darmowe skany wykorzystane";
-  $("#quotaBar").style.width=Math.min(100,S.used/FREE*100)+"%";
+  const q=quota(),left=Math.max(0,q.limit-q.used);
+  $("#planBadge").textContent=S.pro?PLANS[curPlan()].n.toUpperCase():"FREE";$("#planBadge").classList.toggle("pro",S.pro);
+  $("#quotaText").textContent=left>0?`Zostało ${left} z ${q.limit} ${q.label}`:(S.pro?"Limit stron na ten miesiąc wykorzystany":"Darmowe strony wykorzystane");
+  $("#openPay").textContent=S.pro?(left<30?"Doładuj":"Zmień plan"):"Wybierz plan";
+  $("#quotaBar").style.width=Math.min(100,q.used/Math.max(1,q.limit)*100)+"%";
   const k=S.key;
   $("#keyDot").classList.toggle("on",!!k);
   $("#keyTitle").textContent=k?`Wzór: ${k.title||"sprawdzian"}`:"Bez wzoru odpowiedzi";
@@ -778,7 +775,8 @@ async function prep(file){
     return b;
   }finally{img.close&&img.close()}
 }
-function canScan(){return S.pro||S.used+(S.jobs?pendingCount():0)<FREE}
+function pendingPages(){return S.jobs?S.jobs.filter(j=>j.status==="queue"||j.status==="work").reduce((a,j)=>a+j.pages.length,0):0}
+function canScan(){const q=quota();return q.used+pendingPages()<q.limit}
 $("#scanBtn").onclick=()=>{
   if(!canScan()){openPay(true);return}
   S.mode="student";S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];openCamera();
@@ -937,7 +935,7 @@ async function runJob(job){
     job.res={n:job.n,pages,tasks,quality:r.quality||"ok",qnote:String(r.quality_note||""),demo:false,cost:S.server?sink.v:null};
     job.status=tasks.length?"done":"error";if(!tasks.length)job.err="Nie znaleziono zadań na zdjęciu.";
     job.sec=Math.round((Date.now()-job.t0)/1000);
-    if(tasks.length){S.used++;ls.set("used",S.used)}
+    if(tasks.length)addUsage(pages.length);
     try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}
   }catch(e){
     if(e&&e.code==="cancelled")job.status="cancel";
@@ -1096,25 +1094,42 @@ $("#serEnd").onclick=()=>{$("#serConfirm").hidden=false};
 $("#serNo").onclick=()=>{$("#serConfirm").hidden=true};
 $("#serYes").onclick=()=>{$("#serConfirm").hidden=true;wipe();show("home");renderHome();toast("Seria zakończona, zdjęcia usunięte")};
 
-/* ---------- paywall ---------- */
-let plan="y";
-function openPay(limit){$("#payLead").textContent=limit?"Wykorzystałeś 30 darmowych skanów. Przejdź na Pro i sprawdzaj bez limitu.":"Sprawdzaj prace bez limitu skanów.";$("#paySheet").hidden=false}
+/* ---------- plans & paywall (monthly, by pages) ---------- */
+const PLANS={start:{n:"Start",pages:100,price:"9,99 zł",who:"1–3 klasy albo rzadsze sprawdziany"},klasa:{n:"Klasa",pages:300,price:"19,99 zł",who:"Typowy nauczyciel przedmiotowy",pop:true},pro:{n:"Pro",pages:500,price:"29,99 zł",who:"Języki obce, wiele grup i długie sprawdziany"}};
+const curPlan=()=>PLANS[ls.get("plan","klasa")]?ls.get("plan","klasa"):"klasa";
+let plan=curPlan();
+function monthKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)}
+function syncMonth(){if(ls.get("month","")!==monthKey()){ls.set("month",monthKey());ls.set("mused",0);ls.set("extra",0)}}
+function quota(){syncMonth();if(!S.pro)return{used:S.used,limit:FREE,label:"darmowych stron"};const p=PLANS[curPlan()];return{used:ls.get("mused",0),limit:p.pages+ls.get("extra",0),label:"stron w tym miesiącu"}}
+function addUsage(n){if(S.pro){syncMonth();ls.set("mused",ls.get("mused",0)+n)}else{S.used+=n;ls.set("used",S.used)}}
+function openPay(limit){
+  $("#payLead").textContent=S.pro?"Limit stron w tym miesiącu się skończył. Doładuj 100 stron albo wybierz wyższy plan.":"Wykorzystałeś 30 darmowych stron. Wybierz plan i sprawdzaj dalej.";
+  $("#topupBtn2").hidden=!S.pro;renderPlanCards();$("#paySheet").hidden=false}
 $("#openPay").onclick=()=>show("plan");
-document.querySelectorAll(".plan").forEach(b=>b.onclick=()=>{plan=b.dataset.plan;document.querySelectorAll(".plan").forEach(x=>x.classList.toggle("sel",x.dataset.plan===plan))});
-function activate(){S.pro=true;S.plan=plan;S.since=Date.now();ls.set("pro",true);ls.set("plan",plan);ls.set("since",S.since);renderHome();renderPlan();toast(plan==="y"?"Pro roczne aktywne (podgląd)":"Pro miesięczne aktywne (podgląd)")}
+function renderPlanCards(){
+  const html=Object.entries(PLANS).map(([id,p])=>`<button class="plan${id===plan?" sel":""}" data-plan="${id}"><span class="pinfo"><span class="pname">${p.n}${p.pop?' <span class="pop">Najczęściej wybierany</span>':""}${S.pro&&curPlan()===id?' <span class="pop cur">Twój plan</span>':""}</span><span class="small muted">${p.who}</span><span class="small">${p.pages} stron miesięcznie</span></span><span class="price">${p.price}<span class="small muted">/mies.</span></span></button>`).join("");
+  ["#plansMain","#plansSheet"].forEach(sel=>{const el=$(sel);el.innerHTML=html;el.querySelectorAll(".plan").forEach(b=>b.onclick=()=>{plan=b.dataset.plan;renderPlanCards()})});
+  const same=S.pro&&curPlan()===plan,label=S.pro?(same?"To Twój obecny plan":`Zmień na plan ${PLANS[plan].n}`):`Wypróbuj plan ${PLANS[plan].n} – 7 dni za darmo`;
+  $("#pnBuyBtn").textContent=label;$("#pnBuyBtn").disabled=same;$("#buyBtn").textContent=label;$("#buyBtn").disabled=same;
+}
+function activate(){S.pro=true;ls.set("pro",true);ls.set("plan",plan);ls.set("since",Date.now());renderHome();renderPlan();toast(`Plan ${PLANS[plan].n} aktywny (podgląd)`)}
+function topup(){syncMonth();ls.set("extra",ls.get("extra",0)+100);renderHome();renderPlan();toast("Dodano 100 stron do końca miesiąca (podgląd)")}
 $("#buyBtn").onclick=()=>{$("#paySheet").hidden=true;activate()};
 $("#pnBuyBtn").onclick=activate;
+$("#topupBtn").onclick=topup;
+$("#topupBtn2").onclick=()=>{$("#paySheet").hidden=true;topup()};
 $("#restoreBtn").onclick=()=>toast(S.pro?"Subskrypcja jest aktywna":"Nie znaleziono aktywnej subskrypcji");
 $("#pnCancelDemo").onclick=()=>{S.pro=false;ls.set("pro",false);renderHome();renderPlan();toast("Wrócono do planu Free")};
 function renderPlan(){
-  const left=Math.max(0,FREE-S.used);
-  $("#pnName").textContent=S.pro?"Pro":"Free";
-  $("#pnBadge").textContent=S.pro?"PRO":"FREE";$("#pnBadge").classList.toggle("pro",S.pro);
-  $("#pnFree").hidden=S.pro;$("#pnBuy").hidden=S.pro;$("#pnProInfo").hidden=!S.pro;$("#pnCancelDemo").hidden=!S.pro;
-  $("#pnQuota").textContent=left>0?`Zostało ${left} z ${FREE} darmowych skanów`:"Darmowe skany wykorzystane";
-  $("#pnBar").style.width=Math.min(100,S.used/FREE*100)+"%";
-  if(S.pro){const p=ls.get("plan","y"),s=ls.get("since",Date.now()),end=new Date(s+(p==="y"?365:30)*864e5);
-    $("#pnProInfo").textContent=`Plan ${p==="y"?"roczny, 79 zł":"miesięczny, 9,99 zł"} · odnowienie ${end.toLocaleDateString("pl-PL")} · bez limitu skanów`}
+  const q=quota(),cp=PLANS[curPlan()],left=Math.max(0,q.limit-q.used);
+  $("#pnName").textContent=S.pro?cp.n:"Free";
+  $("#pnBadge").textContent=S.pro?cp.n.toUpperCase():"FREE";$("#pnBadge").classList.toggle("pro",S.pro);
+  $("#pnQuota").textContent=`Zostało ${left} z ${q.limit} ${q.label}`;
+  $("#pnBar").style.width=Math.min(100,q.used/Math.max(1,q.limit)*100)+"%";
+  $("#pnProInfo").hidden=!S.pro;$("#pnTopup").hidden=!S.pro;$("#pnCancelDemo").hidden=!S.pro;
+  $("#pnChooseLbl").textContent=S.pro?"Zmień plan":"Wybierz plan";
+  if(S.pro){const end=new Date(ls.get("since",Date.now())+30*864e5);$("#pnProInfo").textContent=`${cp.price} miesięcznie · ${cp.pages} stron · odnowienie ${end.toLocaleDateString("pl-PL")}`}
+  renderPlanCards();
 }
 $("#payClose").onclick=()=>$("#paySheet").hidden=true;
 
@@ -1149,7 +1164,7 @@ privacy:{t:"Polityka prywatności",l:"Wersja z 25.10.2026",b:`
 <li>Zdjęcia bieżącej serii prac są usuwane z pamięci po zakończeniu serii, po zamknięciu aplikacji, po 10 minutach w tle albo po wybraniu „Usuń teraz”.</li>
 </ul>
 <h3>3. Dane nauczyciela</h3>
-<p>Nie wymagamy zakładania konta. Na urządzeniu zapisujemy tylko ustawienia: skalę ocen, wzór odpowiedzi, motyw i licznik darmowych skanów. Usuniesz je w zakładce Więcej.</p>
+<p>Nie wymagamy zakładania konta. Na urządzeniu zapisujemy tylko ustawienia: skalę ocen, wzór odpowiedzi, motyw oraz licznik wykorzystanych stron. Usuniesz je w zakładce Więcej.</p>
 <h3>4. Płatności</h3>
 <p>Subskrypcje obsługuje Google Play. Nie widzimy danych Twojej karty ani konta płatniczego. Otrzymujemy od Google tylko informację, czy subskrypcja jest aktywna.</p>
 <h3>5. Reklamy i analityka</h3>
@@ -1163,8 +1178,8 @@ terms:{t:"Regulamin",l:"Wersja z 25.10.2026",b:`
 <p>EduSkan pomaga nauczycielom sprawdzać prace pisemne uczniów na podstawie zdjęcia. Usługodawca: ${F("[nazwa firmy, adres, NIP]")}.</p>
 <h3>2. Rola nauczyciela</h3>
 <p>Wynik aplikacji jest propozycją. Ostateczną ocenę zawsze ustala nauczyciel. Odczyt pisma odręcznego może zawierać błędy, dlatego aplikacja oznacza miejsca wymagające sprawdzenia.</p>
-<h3>3. Plan Free i Pro</h3>
-<ul><li>Plan Free obejmuje 30 skanów prac.</li><li>Plan Pro kosztuje 9,99 zł miesięcznie lub 79 zł rocznie (z VAT) i nie ma limitu skanów.</li><li>Nowi użytkownicy mogą skorzystać z 7 dni bezpłatnego okresu próbnego.</li><li>Subskrypcja odnawia się automatycznie. Anulujesz ją w Google Play najpóźniej 24 godziny przed końcem okresu.</li><li>Zwroty rozpatruje Google Play zgodnie ze swoimi zasadami.</li></ul>
+<h3>3. Plany</h3>
+<ul><li>Na start otrzymujesz 30 bezpłatnych stron. Skan wzoru odpowiedzi jest zawsze bezpłatny.</li><li>Plany miesięczne (z VAT): Start – 100 stron za 9,99 zł, Klasa – 300 stron za 19,99 zł, Pro – 500 stron za 29,99 zł. Praca kilkustronicowa zużywa tyle stron, ile ma kartek.</li><li>Niewykorzystane strony przepadają z końcem miesiąca. Doładowanie +100 stron kosztuje 4,99 zł i jest ważne do końca bieżącego miesiąca.</li><li>Nowi użytkownicy mogą skorzystać z 7 dni bezpłatnego okresu próbnego.</li><li>Subskrypcja odnawia się co miesiąc. Anulujesz ją lub zmienisz plan w Google Play, najpóźniej 24 godziny przed końcem okresu.</li><li>Zwroty rozpatruje Google Play zgodnie ze swoimi zasadami.</li></ul>
 <h3>4. Zasady korzystania</h3>
 <p>Skanuj tylko prace, do których sprawdzania masz uprawnienia. Nie używaj aplikacji do innych dokumentów zawierających dane osobowe.</p>
 <h3>5. Reklamacje</h3>
