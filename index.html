@@ -202,6 +202,9 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .okc{color:var(--ok)}.badc{color:var(--pen)}.halfc{color:var(--warn)}
 .fix.col{flex-direction:column;align-items:flex-start;gap:4px}
 .fixrow{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px}
+.badu{text-decoration:underline;text-decoration-color:var(--pen);text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-skip-ink:none}
+.badu.gap{color:var(--pen);text-decoration:none;font-family:var(--f-body);font-size:.8em}
+.goodh{color:var(--ok);font-weight:800}
 /* tab bar */
 .tabbar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);z-index:5}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 10px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -1089,6 +1092,26 @@ function orderIdx(tasks){return tasks.map((t,i)=>i).sort((a,b)=>{const A=tasks[a
 const DOUBT={illegible:["Nieczytelne pismo",'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'],two_marks:["Dwie odpowiedzi zaznaczone",'<path d="M3 12l4 4 8-8M11 16l1 1 9-9"/>'],line:["Niejasna linia",'<path d="M4 18C9 18 15 6 20 6"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/>'],content:["Ocena treści",'<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/>'],other:["Do sprawdzenia",'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>']};
 function doubtChip(t){const d=DOUBT[t.doubt]||DOUBT.other;return `<span class="chip chk dchip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d[1]}</svg>${d[0]}</span>`}
 function optsHtml(t){return (t.options||[]).map((o,i)=>{const c=o.points>=t.max?"g":o.points<=0?"r":"a";return `<button class="opt ${c}" data-o="${i}"><b>${esc(o.label)}</b><small>${fmt(o.points)} pkt</small></button>`}).join("")}
+function lev(a,b){if(Math.abs(a.length-b.length)>3)return 9;const d=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=d[0];d[0]=i;for(let j=1;j<=b.length;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return d[b.length]}
+function markPair(w,r){
+  const ws=w.split(/(\s+)/),rs=r.split(/(\s+)/);
+  const bad=x=>`<span class="badu">${esc(x)}</span>`,good=x=>`<span class="goodh">${esc(x)}</span>`;
+  if(ws.length!==rs.length)return [bad(w),good(r)];
+  let A="",B="";
+  for(let i=0;i<ws.length;i++){
+    const x=ws[i],y=rs[i];
+    if(/^\s+$/.test(x)||x===y||norm(x)===norm(y)){A+=esc(x);B+=esc(y);continue}
+    const lx=x.toLowerCase(),ly=y.toLowerCase();
+    if(strip(x)===strip(y)||lev(lx,ly)<=2&&Math.min(x.length,y.length)>2){
+      let p=0;while(p<x.length&&p<y.length&&lx[p]===ly[p])p++;
+      let s=0;while(s<x.length-p&&s<y.length-p&&lx[x.length-1-s]===ly[y.length-1-s])s++;
+      const xm=x.slice(p,x.length-s),ym=y.slice(p,y.length-s);
+      A+=esc(x.slice(0,p))+(xm?bad(xm):`<span class="badu gap">‸</span>`)+esc(x.slice(x.length-s));
+      B+=esc(y.slice(0,p))+(ym?good(ym):"")+esc(y.slice(y.length-s));
+    }else{A+=bad(x);B+=good(y)}
+  }
+  return [A,B];
+}
 function diffPairs(a,c){
   const sp=x=>String(x||"").split(/\s*(?:[,;|\/\n]|\s[-–]\s)\s*/).map(s=>s.trim()).filter(Boolean);
   const eq=(x,y)=>S.accents?norm(x)===norm(y):strip(x)===strip(y);
@@ -1105,10 +1128,10 @@ function fixHtml(t){
   if(c){
     const pairs=diffPairs(t.answer,c);
     if(pairs){
-      const rows=pairs.slice(0,4).map(([w,r])=>w&&r?`<div class="fixrow"><span class="hand wrongtxt">${esc(w)}</span><span class="arr">→</span><b>${esc(r)}</b></div>`:w?`<div class="fixrow"><span class="hand wrongtxt">${esc(w)}</span><span class="small muted">zbędne</span></div>`:`<div class="fixrow"><span class="small muted">brak</span><span class="arr">→</span><b>${esc(r)}</b></div>`).join("");
+      const rows=pairs.slice(0,4).map(([w,r])=>{if(w&&r){const [a,b]=markPair(w,r);return `<div class="fixrow"><span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}return w?`<div class="fixrow"><span class="hand"><span class="badu">${esc(w)}</span></span><span class="small muted">zbędne</span></div>`:`<div class="fixrow"><span class="small muted">brak</span><span class="arr">→</span><b><span class="goodh">${esc(r)}</span></b></div>`}).join("");
       return `<div class="fix col">${rows}${pairs.length>4?`<div class="small muted">i jeszcze ${pairs.length-4}</div>`:""}</div>`;
     }
-    if(String(t.answer).length<=30&&String(c).length<=30)return `<div class="fix"><span class="hand wrongtxt">${esc(t.answer||"—")}</span><span class="arr">→</span><b>${esc(c)}</b></div>`;
+    if(String(t.answer).length<=30&&String(c).length<=30){const [a,b]=markPair(String(t.answer||"—"),String(c));return `<div class="fix"><span class="hand">${a}</span><span class="arr">→</span><b>${b}</b></div>`}
   }
   return `<div class="fix"><span class="small warnc">${esc(t.question||t.reason||"Sprawdź odpowiedź")}</span></div>`;
 }
