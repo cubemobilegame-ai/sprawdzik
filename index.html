@@ -1538,11 +1538,11 @@ const norm=s=>String(s||"").toLowerCase().replace(/[\s.,;:!?()„”"'«»-]+/g,
 async function verify(tasks,signal,tier,which,pages,sink){
   const onlyCheck=which==="checks";
   const rank=t=>t.status==="check"?(which==="others"?9:0):onlyCheck?9:t.conf<0.9?1:(t.status==="wrong"||t.status==="partial")?2:9;
-  const pick=tasks.map((t,i)=>({t,i,r:rank(t)})).filter(o=>o.r<9&&o.t.box).sort((a,b)=>a.r-b.r).slice(0,onlyCheck?3:S.maxImg);
+  const keyOf=nr=>S.key?S.key.tasks.find(k=>norm(k.nr)===norm(nr)):null;
+  const pick=tasks.map((t,i)=>({t,i,r:rank(t)})).filter(o=>o.r<9&&o.t.box&&!(o.t.items&&o.t.items.length&&!o.t.correct&&!((keyOf(o.t.nr)||{}).answer))).sort((a,b)=>a.r-b.r).slice(0,onlyCheck?3:S.maxImg);
   if(!pick.length)return;
   const imgs=[];
   for(const o of pick)imgs.push(await crop(pages[o.t.page-1].blob,o.t.box));
-  const keyOf=nr=>S.key?S.key.tasks.find(k=>norm(k.nr)===norm(nr)):null;
   const list=pick.map((o,j)=>{const k=keyOf(o.t.nr);return `Image ${j+1} → task "${o.t.nr}" (type ${o.t.type||"?"}, max ${o.t.max} pts). Expected answer: ${JSON.stringify(k?k.answer:o.t.correct)}${k&&k.question?` (question: ${JSON.stringify(k.question)})`:""}.`}).join("\n");
   const prompt=`You are double-checking automatic grading of a student's handwritten test. Each image is a CLOSE-UP crop of one task's answer area (crop may include neighbouring lines; focus on the named task).
 ${list}
@@ -1773,8 +1773,8 @@ function renderResult(){
     const t=sc.tasks[i],s=stat(t);
     if((s!=="ok"||t.type==="open")&&!S.showAll){
       const d=document.createElement("div");d.className="task dense"+(s==="check"?" chk":" miss");d.id="task-"+i;
-      const fixed=s==="wrong"&&!t.resolved&&!(t.items&&t.items.length>1)&&t.type!=="open";
-      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div>${fixed?`<div class="small muted zero">0 / ${fmt(t.max)} pkt · <button class="link small chg">zmień</button></div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
+      const fixed=s!=="check"&&!t.resolved;
+      d.innerHTML=`<div class="drow">${s==="check"?`<span class="dnum">${nums[i]}</span>`:`<span class="dnum ${s==="wrong"?"x":s==="ok"?"o":"h"}">${s==="wrong"?"✗":s==="ok"?"✓":"½"}</span>`}<span class="task-nr"><span class="small muted">zad.</span> ${esc(t.nr)}</span>${fixHtml(t)}</div>${fixed?`<div class="small muted zero">${fmt(t.points)} / ${fmt(t.max)} pkt · <button class="link small chg">zmień</button></div>`:`<div class="pts">${ptsHtml(t)}</div>`}`;
       d.querySelectorAll(".pt").forEach(b=>b.onclick=()=>{decide(t,+b.dataset.p,sc);renderResult()});
       const cg=d.querySelector(".chg");if(cg)cg.onclick=()=>{t.resolved=true;renderResult()};
       box.appendChild(d);return;
