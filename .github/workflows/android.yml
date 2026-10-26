@@ -13,6 +13,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,24 +37,24 @@ jobs:
         run: |
           CAPV=$(npm view @capacitor-community/text-to-speech@latest peerDependencies --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let p={};try{p=JSON.parse(s)}catch(e){};const v=(p["@capacitor/core"]||"").match(/(\d+)/);console.log(v?v[1]:"latest")})')
           echo "Capacitor $CAPV"
-          npm install --no-audit --no-fund @capacitor/core@$CAPV @capacitor/cli@$CAPV @capacitor/android@$CAPV @capacitor/filesystem@$CAPV @capacitor/share@$CAPV @capacitor-community/text-to-speech@latest
-          npx cap add android
+          npm install --no-audit --no-fund @capacitor/core@$CAPV @capacitor/cli@$CAPV @capacitor/android@$CAPV @capacitor/filesystem@$CAPV @capacitor/share@$CAPV @capacitor-community/text-to-speech@latest 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
+          npx cap add android 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
       - name: Ikony, aparat, wersja
         working-directory: android-app
         env:
           VERSION_CODE: ${{ github.run_number }}
-        run: VERSION_NAME="$(cat version.txt)" node patch-android.mjs
+        run: VERSION_NAME="$(cat version.txt)" node patch-android.mjs 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
       - name: Synchronizacja
         working-directory: android-app
-        run: npx cap sync android
+        run: npx cap sync android 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
       - name: Zbuduj AAB i APK (niepodpisane – podpis dodawany poza GitHubem)
         working-directory: android-app/android
         run: |
           chmod +x gradlew
-          ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+          ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
           mkdir -p ../../wynik
           cp app/build/outputs/bundle/release/app-release.aab ../../wynik/eduskan-unsigned.aab
           cp app/build/outputs/apk/release/app-release-unsigned.apk ../../wynik/eduskan-unsigned.apk
@@ -67,3 +70,11 @@ jobs:
           gh release create "android-$V-${{ github.run_number }}" wynik/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "EduSkan Android $V (kompilacja ${{ github.run_number }})" \
             --notes "Niepodpisane pliki AAB/APK (versionCode ${{ github.run_number }}). Podpisane wersje wysyła Claude."
+
+      - name: Log błędu do Releases
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          touch build.log; tail -c 300000 build.log > build-error.log
+          gh release create "android-error-${{ github.run_number }}" build-error.log --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "Błąd budowania ${{ github.run_number }}" --notes "Log błędu"
