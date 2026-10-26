@@ -82,7 +82,7 @@ export default async function handler(req, res) {
     if (!r.ok) {
       let msg = "";
       try { msg = JSON.stringify(await r.json()).toLowerCase(); } catch (e) {}
-      if (msg.includes("credit balance")) return res.status(502).json({ error: "no_credits" });
+      if (/credit|billing|balance|insufficient|payment|quota/.test(msg)) return res.status(502).json({ error: "no_credits" });
       if (r.status === 401 || r.status === 403) return res.status(502).json({ error: "bad_key" });
       if (r.status === 404 || msg.includes("not_found_error")) return res.status(502).json({ error: "bad_model" });
       const status = r.status === 429 || r.status === 529 ? 429 : 502;
