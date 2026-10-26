@@ -753,7 +753,7 @@ function i18nDom(){
   walk(document.body);
   new MutationObserver(ms=>ms.forEach(m=>{if(m.type==="characterData")trText(m.target);else if(m.type==="attributes")trEl(m.target);else m.addedNodes.forEach(walk)})).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTR});
 }
-const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get(SCALE_KEY,DEFAULT_SCALE),precise:ls.get("precise",true),pm:UILANG==="pl"&&ls.get("pm",false),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","default"),spell:ls.get("spell",false),flow:ls.get("flow","stack"),camMode:ls.get("cam","live"),voice:ls.get("voice",false),dnr:ls.get("dnr",false),classSize:ls.get("classSize",0),
+const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get(SCALE_KEY,DEFAULT_SCALE),precise:ls.get("precise",true),pm:UILANG==="pl"&&ls.get("pm",false),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","default"),spell:ls.get("spell",false),flow:ls.get("flow","stack"),camMode:"photo",voice:ls.get("voice",false),dnr:ls.get("dnr",false),classSize:ls.get("classSize",0),
   mode:"student",pagesPer:ls.get("pagesPer",1),pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
 
 /* ---------- intro ---------- */
@@ -1161,7 +1161,7 @@ document.querySelectorAll("[data-cam]").forEach(b=>b.onclick=()=>{S.camMode=b.da
 
 /* ---------- settings: flow, voice, register number ---------- */
 function renderMarkSettings(){
-  $("#camPanel").hidden=!liveSupported;document.querySelectorAll("[data-cam]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cam===S.camMode));
+  $("#camPanel").hidden=true;document.querySelectorAll("[data-cam]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cam===S.camMode));
   document.querySelectorAll("[data-flow]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.flow===S.flow));
   $("#flowHint").textContent=S.flow==="one"?"Po każdym skanie od razu widzisz wynik do przepisania. Nanieś go i skanuj następną pracę.":"Skanuj cały stos, jedna praca po drugiej. Potem odwróć stos i nanoś wyniki po kolei (przycisk w serii prac).";
   $("#voiceRow").hidden=!canVoice;$("#voiceSw").checked=S.voice;$("#dnrSw").checked=S.dnr;
