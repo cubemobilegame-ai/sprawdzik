@@ -1,0 +1,10 @@
+{
+  "appId": "com.cubemobilegames.eduskan",
+  "appName": "EduSkan",
+  "webDir": "www",
+  "backgroundColor": "#F5F5FB",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto",
+    "allowMixedContent": false
+  }
+}

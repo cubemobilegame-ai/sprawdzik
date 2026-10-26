@@ -724,6 +724,9 @@ setTimeout(endIntro,4500);
 intro.addEventListener("click",()=>{if(plays>=1||Date.now()-t0>1200)endIntro()});
 
 /* ---------- AI: Claude app (window.claude) or own server (/api/ai) ---------- */
+/* Android app (Capacitor): same code, AI through the Vercel server, native PDF sharing and speech */
+const CAP=window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()?window.Capacitor:null;
+const API_BASE=CAP?"https://sprawdzik2.vercel.app":"";
 const TIERMAP={complex:"default",default:"quick"};
 const viaClaude=c=>({json:(p,o={})=>{const {costSink,purpose,...rest}=o;if(purpose==="verify")rest.effort="low";return c.json(p,{...rest,modelTier:TIERMAP[o.modelTier]||o.modelTier})},limits:()=>c.limits()});
 
@@ -743,7 +746,7 @@ const serverAI={
     try{imgs=await Promise.all([...(opt.images||[])].map(blobToB64))}catch(e){throw{code:"image_rejected"}}
     let res;
     try{
-      res=await fetch("/api/ai",{method:"POST",signal:opt.signal,headers:{"content-type":"application/json","x-app-code":getCode()},body:JSON.stringify({prompt,images:imgs,tier:opt.modelTier||"default",purpose:opt.purpose||"read"})});
+      res=await fetch(API_BASE+"/api/ai",{method:"POST",signal:opt.signal,headers:{"content-type":"application/json","x-app-code":getCode()},body:JSON.stringify({prompt,images:imgs,tier:opt.modelTier||"default",purpose:opt.purpose||"read"})});
     }catch(e){throw{code:e&&e.name==="AbortError"?"cancelled":"upstream_error"}}
     if(res.status===401){askCode(true);throw{code:"bad_code"}}
     if(res.status===429)throw{code:"rate_limited"};
@@ -828,10 +831,12 @@ function missingNrs(){if(!S.dnr||!(S.classSize>0))return "";const d=doneJobs();i
 function sortedJobs(){const d=doneJobs();if(!S.dnr)return d;return [...d].sort((a,b)=>(+a.res.dnr||999)-(+b.res.dnr||999)||a.n-b.n)}
 
 /* ---------- voice ---------- */
-const canVoice=!!(window.speechSynthesis&&window.SpeechSynthesisUtterance);
-function primeVoice(){if(!S.voice||!canVoice||primeVoice.d)return;primeVoice.d=1;try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}catch(e){}}
-function stopVoice(){try{canVoice&&speechSynthesis.cancel()}catch(e){}}
+const TTS=CAP&&CAP.Plugins&&CAP.Plugins.TextToSpeech;
+const canVoice=!!TTS||!!(window.speechSynthesis&&window.SpeechSynthesisUtterance);
+function primeVoice(){if(TTS)return;if(!S.voice||!canVoice||primeVoice.d)return;primeVoice.d=1;try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}catch(e){}}
+function stopVoice(){try{if(TTS){TTS.stop().catch(()=>{});return}canVoice&&speechSynthesis.cancel()}catch(e){}}
 function speak(text){
+  if(TTS){const lang=typeof LOC!=="undefined"?LOC:"pl-PL";TTS.stop().catch(()=>{}).then(()=>TTS.speak({text,lang,rate:0.95})).catch(()=>{});return}
   if(!canVoice){toast("To urządzenie nie czyta na głos");return}
   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="pl-PL";u.rate=0.95;
     const v=speechSynthesis.getVoices().find(x=>/^pl/i.test(x.lang));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}
@@ -1146,6 +1151,10 @@ function buildPdf(imgs){
 function pdfTitle(){return (S.key&&S.key.title)||"Wyniki pracy"}
 function pdfName(kind){const d=new Date().toLocaleDateString("pl-PL");return `EduSkan ${kind} ${pdfTitle()} ${d}`.replace(/[\\/:*?"<>|]+/g," ").replace(/\s+/g," ").trim().slice(0,90)+".pdf"}
 async function savePdf(blob,name){
+  if(CAP&&CAP.Plugins&&CAP.Plugins.Filesystem&&CAP.Plugins.Share){
+    try{const w=await CAP.Plugins.Filesystem.writeFile({path:name,data:await blobToB64(blob),directory:"CACHE"});await CAP.Plugins.Share.share({title:name,files:[w.uri]});return}
+    catch(e){if(/cancel/i.test(String(e&&(e.message||e.code)||"")))return}
+  }
   try{if(window.claude){const d=await window.claude.use("downloads");if(d){try{await d.save({filename:name,data:blob});return}catch(e){if(e&&(e.code==="declined"||e.code==="rate_limited"))return}}}}catch(e){}
   try{const f=new File([blob],name,{type:"application/pdf"});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==="AbortError")return}
   const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);

@@ -3,7 +3,7 @@ name: EduSkan – Android
 on:
   push:
     branches: [main]
-    paths: ["twa/**", ".github/workflows/android.yml"]
+    paths: ["android-app/**", "index.html", "cube-mobile-apps-intro.mp4", ".github/workflows/android.yml"]
   workflow_dispatch:
 
 permissions:
@@ -12,34 +12,58 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: "17" }
-      - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: "8.14.3" }
-      - name: Android SDK 36
+        with: { distribution: temurin, java-version: "21" }
+      - name: Licencje Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Pliki aplikacji (www)
+        working-directory: android-app
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
-      - name: Zbuduj AAB i APK (niepodpisane – podpis dodawany poza GitHubem)
-        working-directory: twa
+          mkdir -p www
+          cp ../index.html ../cube-mobile-apps-intro.mp4 ../icon-180.png ../icon-512.png ../manifest.json www/
+          ls -la www
+
+      - name: Capacitor i wtyczki
+        working-directory: android-app
+        run: |
+          CAPV=$(npm view @capacitor-community/text-to-speech@latest peerDependencies --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let p={};try{p=JSON.parse(s)}catch(e){};const v=(p["@capacitor/core"]||"").match(/(\d+)/);console.log(v?v[1]:"latest")})')
+          echo "Capacitor $CAPV"
+          npm install --no-audit --no-fund @capacitor/core@$CAPV @capacitor/cli@$CAPV @capacitor/android@$CAPV @capacitor/filesystem@$CAPV @capacitor/share@$CAPV @capacitor-community/text-to-speech@latest
+          npx cap add android
+
+      - name: Ikony, aparat, wersja
+        working-directory: android-app
         env:
           VERSION_CODE: ${{ github.run_number }}
+        run: VERSION_NAME="$(cat version.txt)" node patch-android.mjs
+
+      - name: Synchronizacja
+        working-directory: android-app
+        run: npx cap sync android
+
+      - name: Zbuduj AAB i APK (niepodpisane – podpis dodawany poza GitHubem)
+        working-directory: android-app/android
         run: |
-          export VERSION_NAME="$(cat version.txt)"
-          gradle bundleRelease assembleRelease --no-daemon --stacktrace
-          mkdir -p ../wynik
-          cp app/build/outputs/bundle/release/app-release.aab ../wynik/eduskan-unsigned.aab
-          cp app/build/outputs/apk/release/app-release-unsigned.apk ../wynik/eduskan-unsigned.apk
-          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" ../wynik/apksigner.jar
-          ls -la ../wynik
+          chmod +x gradlew
+          ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+          mkdir -p ../../wynik
+          cp app/build/outputs/bundle/release/app-release.aab ../../wynik/eduskan-unsigned.aab
+          cp app/build/outputs/apk/release/app-release-unsigned.apk ../../wynik/eduskan-unsigned.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          cp "$BT/lib/apksigner.jar" ../../wynik/apksigner.jar
+          ls -la ../../wynik
+
       - name: Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          V="$(cat twa/version.txt)"
+          V="$(cat android-app/version.txt)"
           gh release create "android-$V-${{ github.run_number }}" wynik/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "EduSkan Android $V (kompilacja ${{ github.run_number }})" \
             --notes "Niepodpisane pliki AAB/APK (versionCode ${{ github.run_number }}). Podpisane wersje wysyła Claude."

@@ -16,6 +16,16 @@ const VAT = 1.23;
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  // Aplikacja na Androida (Capacitor) działa pod adresem https://localhost – tylko ją wpuszczamy z innego adresu.
+  const origin = req.headers.origin || "";
+  if (["https://localhost", "http://localhost", "capacitor://localhost"].includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "content-type, x-app-code");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
+  if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "method" });
 
   const appCode = process.env.APP_CODE;
