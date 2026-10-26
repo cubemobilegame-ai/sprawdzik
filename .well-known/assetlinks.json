@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.cubemobilegames.eduskan",
+    "sha256_cert_fingerprints": [
+      "B0:77:C3:AF:B7:FD:5D:C1:E4:1C:4A:EE:5F:DB:1B:3F:4C:6A:33:F6:08:E1:76:B1:83:73:40:27:70:63:FD:AD"
+    ]
+  }
+}]
