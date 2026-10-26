@@ -237,7 +237,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .info:hover{opacity:.8}
 .btn[disabled] .info{pointer-events:auto}
 .camv{padding:0!important;gap:0;background:#000;overflow:hidden;position:relative}
-.camv video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.camv video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
 .cam-guide{position:absolute;left:7%;right:7%;top:15%;bottom:28%;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.3);border:3px solid rgba(255,255,255,.6);pointer-events:none;transition:border-color .2s}
 .cam-guide.ready{border-color:#2DD4BF}
 .cam-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;color:#fff;background:linear-gradient(rgba(0,0,0,.6),transparent)}
@@ -507,6 +507,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
   <!-- LIVE SCANNER -->
   <section class="view camv" id="v-cam" hidden>
     <video id="camVid" playsinline muted autoplay></video>
+    <canvas id="camOv" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
     <div class="cam-guide" id="camGuide"></div>
     <div class="cam-flash" id="camFlash"></div>
     <div class="cam-top"><button class="icon-btn" id="camClose" aria-label="Zakończ skanowanie">✕</button><div class="cam-count" id="camCount">Praca 1</div><button class="cam-pill" id="camAuto" aria-pressed="true">AUTO</button></div>
@@ -954,56 +955,111 @@ function startScan(){
   if(liveSupported&&S.camMode==="live"&&!S.liveBroken)openLive();else openCamera();
 }
 async function openLive(){
-  show("cam");primeVoice();$("#camFail").hidden=true;$("#camBig").hidden=true;
+  show("cam");primeVoice();$("#camFail").hidden=true;$("#camBig").hidden=true;clearTimeout(LV.idleT);
   try{if(!LV.ac){const A=window.AudioContext||window.webkitAudioContext;if(A)LV.ac=new A()}if(LV.ac&&LV.ac.state==="suspended")LV.ac.resume()}catch(e){}
-  LV.prev=null;LV.cap=null;LV.armed=true;LV.still=0;LV.away=0;renderLive();
-  if(LV.stream)return startTick();
-  try{LV.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1920}}})}
-  catch(e){S.liveBroken=true;$("#camFail").hidden=false;return}
-  if($("#v-cam").hidden){stopLive();return}
-  const v=$("#camVid");v.srcObject=LV.stream;try{await v.play()}catch(e){}
-  try{if(navigator.wakeLock)LV.wake=await navigator.wakeLock.request("screen")}catch(e){}
+  LV.prev=null;LV.cap=null;LV.armed=true;LV.still=0;LV.away=0;LV.quad=null;renderLive();drawQuad(null,false);
+  const live=LV.stream&&LV.stream.getVideoTracks().some(t=>t.readyState==="live");
+  if(!live){
+    LV.stream=null;
+    try{LV.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:2560},height:{ideal:1920}}})}
+    catch(e){S.liveBroken=true;$("#camFail").hidden=false;return}
+  }
+  if($("#v-cam").hidden){pauseLive();return}
+  const v=$("#camVid");if(v.srcObject!==LV.stream)v.srcObject=LV.stream;try{await v.play()}catch(e){}
+  try{if(navigator.wakeLock&&!LV.wake)LV.wake=await navigator.wakeLock.request("screen")}catch(e){}
   startTick();
 }
-function startTick(){clearInterval(LV.timer);LV.timer=setInterval(liveTick,140)}
-function stopLive(){clearInterval(LV.timer);LV.timer=0;if(LV.stream){LV.stream.getTracks().forEach(t=>t.stop());LV.stream=null}try{$("#camVid").srcObject=null}catch(e){}try{LV.wake&&LV.wake.release()}catch(e){}LV.wake=null}
+function startTick(){clearInterval(LV.timer);LV.timer=setInterval(liveTick,130)}
+/* pause keeps the camera permission/stream for the next work (no new prompt); full stop after 3 min idle */
+function pauseLive(){clearInterval(LV.timer);LV.timer=0;clearTimeout(LV.idleT);LV.idleT=setTimeout(stopLive,180000)}
+function stopLive(){clearInterval(LV.timer);LV.timer=0;clearTimeout(LV.idleT);if(LV.stream){LV.stream.getTracks().forEach(t=>t.stop());LV.stream=null}try{$("#camVid").srcObject=null}catch(e){}try{LV.wake&&LV.wake.release()}catch(e){}LV.wake=null}
+let DW=120,DH=160;
 function frameGray(){
   const v=$("#camVid");if(!v.videoWidth)return null;
-  acx.drawImage(v,0,0,AW,AH);const d=acx.getImageData(0,0,AW,AH).data,g=new Uint8Array(AW*AH);
+  const dh=Math.max(60,Math.round(120*v.videoHeight/v.videoWidth));if(dh!==DH||acv.width!==120){DW=120;DH=dh;acv.width=DW;acv.height=DH}
+  acx.drawImage(v,0,0,DW,DH);const d=acx.getImageData(0,0,DW,DH).data,g=new Uint8Array(DW*DH);
   for(let i=0,j=0;i<g.length;i++,j+=4)g[i]=(d[j]*3+d[j+1]*6+d[j+2])/10;return g;
 }
-function gdiff(a,b){let s=0;for(let i=0;i<a.length;i+=2)s+=Math.abs(a[i]-b[i]);return s/(a.length/2)}
+function gdiff(a,b){if(!a||!b||a.length!==b.length)return 99;let s=0;for(let i=0;i<a.length;i+=2)s+=Math.abs(a[i]-b[i]);return s/(a.length/2)}
+/* find the sheet: Otsu threshold -> largest bright blob -> 4 extreme corners */
+function findSheet(g){
+  const W=DW,H=DH,N=W*H,hist=new Array(256).fill(0);for(let i=0;i<N;i++)hist[g[i]]++;
+  let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];let sB=0,wB=0,best=0,t=128,m0=0,m1=0;
+  for(let i=0;i<256;i++){wB+=hist[i];if(!wB)continue;const wF=N-wB;if(!wF)break;sB+=i*hist[i];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>best){best=v;t=i;m0=mB;m1=mF}}
+  if(m1-m0<35)return null;
+  const lab=new Int32Array(N),q=new Int32Array(N);let bestL=0,bestA=0,L=0;
+  for(let s=0;s<N;s++){if(lab[s]||g[s]<=t)continue;L++;let h=0,e=0,a=0;q[e++]=s;lab[s]=L;
+    while(h<e){const p=q[h++];a++;const x=p%W,y=(p/W)|0;
+      if(x>0&&!lab[p-1]&&g[p-1]>t){lab[p-1]=L;q[e++]=p-1}if(x<W-1&&!lab[p+1]&&g[p+1]>t){lab[p+1]=L;q[e++]=p+1}
+      if(y>0&&!lab[p-W]&&g[p-W]>t){lab[p-W]=L;q[e++]=p-W}if(y<H-1&&!lab[p+W]&&g[p+W]>t){lab[p+W]=L;q[e++]=p+W}}
+    if(a>bestA){bestA=a;bestL=L}}
+  if(bestA<N*0.18)return null;
+  let tl=[0,0,1e9],tr=[0,0,-1e9],br=[0,0,-1e9],bl=[0,0,1e9];
+  for(let p=0;p<N;p++){if(lab[p]!==bestL)continue;const x=p%W,y=(p/W)|0,s=x+y,d=x-y;
+    if(s<tl[2])tl=[x,y,s];if(s>br[2])br=[x,y,s];if(d>tr[2])tr=[x,y,d];if(d<bl[2])bl=[x,y,d]}
+  const Q=[tl,tr,br,bl].map(c=>[c[0]/W,c[1]/H]);
+  let ar=0;for(let i=0;i<4;i++){const a=Q[i],b=Q[(i+1)%4];ar+=a[0]*b[1]-b[0]*a[1]}ar=Math.abs(ar)/2;
+  if(ar<0.15||ar<bestA/N*0.7)return null;
+  return Q;
+}
+function qdist(a,b){if(!a||!b)return 9;let m=0;for(let i=0;i<4;i++)m=Math.max(m,Math.hypot(a[i][0]-b[i][0],a[i][1]-b[i][1]));return m}
+function drawQuad(Q,ready){
+  const cv=$("#camOv"),v=$("#camVid"),r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr)}
+  const c=cv.getContext("2d");c.clearRect(0,0,cv.width,cv.height);$("#camGuide").hidden=!!Q;
+  if(!Q||!v.videoWidth)return;
+  const sc=Math.min(cv.width/v.videoWidth,cv.height/v.videoHeight),ox=(cv.width-v.videoWidth*sc)/2,oy=(cv.height-v.videoHeight*sc)/2;
+  const P=Q.map(p=>[ox+p[0]*v.videoWidth*sc,oy+p[1]*v.videoHeight*sc]);
+  c.beginPath();P.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();
+  c.fillStyle=ready?"rgba(45,212,191,.22)":"rgba(255,255,255,.12)";c.fill();
+  c.lineWidth=4*dpr;c.strokeStyle=ready?"#2DD4BF":"rgba(255,255,255,.9)";c.lineJoin="round";c.stroke();
+  c.fillStyle=ready?"#2DD4BF":"#fff";P.forEach(p=>{c.beginPath();c.arc(p[0],p[1],7*dpr,0,Math.PI*2);c.fill()});
+}
 function liveTick(){
   if(LV.busy)return;const g=frameGray();if(!g)return;
   const mot=LV.prev?gdiff(g,LV.prev):99;LV.prev=g;
-  let sum=0,n=0,edge=0;const x0=AW*.12|0,x1=AW*.88|0,y0=AH*.16|0,y1=AH*.7|0;
-  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=y*AW+x,v=g[i];sum+=v;n++;if(Math.abs(v-g[i+1])+Math.abs(v-g[i+AW])>40)edge++}
-  const mean=sum/n,ef=edge/n,page=mean>70&&ef>0.025&&ef<0.55;
-  if(!LV.armed){if(!page)LV.away++;else LV.away=0;if(mot>14||LV.away>=3||(LV.cap&&gdiff(g,LV.cap)>28))LV.armed=true}
-  const ready=LV.auto&&LV.armed&&page&&mot<3.2;
+  const Q=findSheet(g),moved=qdist(Q,LV.quad);LV.quad=Q;
+  if(!LV.armed){if(!Q)LV.away++;else LV.away=0;if(mot>12||LV.away>=2||(Q&&LV.capQ&&qdist(Q,LV.capQ)>0.12))LV.armed=true}
+  const ready=LV.auto&&LV.armed&&!!Q&&moved<0.025&&mot<5;
   LV.still=ready?LV.still+1:0;
   $("#camShot").style.setProperty("--p",Math.min(1,LV.still/STILL));
-  $("#camGuide").classList.toggle("ready",ready);
-  setHint(!LV.auto?"manual":!page?"place":!LV.armed?"next":ready?"hold":"steady");
-  if(LV.still>=STILL){LV.still=0;captureLive(g)}
+  drawQuad(Q,ready);
+  setHint(!LV.auto?"manual":!Q?"place":!LV.armed?"next":ready?"hold":"steady");
+  if(LV.still>=STILL){LV.still=0;captureLive(g,Q)}
 }
-const HINTS={place:"Połóż kartkę w ramce",next:"Odłóż kartkę i połóż następną",hold:"Nie ruszaj – robię zdjęcie…",steady:"Trzymaj telefon nieruchomo",manual:"Stuknij biały przycisk, żeby zrobić zdjęcie",busy:"Zapisuję…"};
+const HINTS={place:"Pokaż całą kartkę – sama znajdę jej rogi",next:"Odłóż kartkę i połóż następną",hold:"Nie ruszaj – robię skan…",steady:"Trzymaj telefon nieruchomo",manual:"Stuknij biały przycisk, żeby zrobić zdjęcie",busy:"Zapisuję…"};
 function setHint(k){if(LV.hintK===k)return;LV.hintK=k;$("#camHint").textContent=HINTS[k]}
 function flash(){const f=$("#camFlash");f.classList.add("on");setTimeout(()=>f.classList.remove("on"),60)}
 function beep(f){try{const a=LV.ac;if(!a)return;const o=a.createOscillator(),gn=a.createGain();o.frequency.value=f||880;gn.gain.setValueAtTime(.12,a.currentTime);gn.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.18);o.connect(gn).connect(a.destination);o.start();o.stop(a.currentTime+.2)}catch(e){}}
 function bigMsg(t,warn){const b=$("#camBig");b.innerHTML=t;b.classList.toggle("warn",!!warn);b.hidden=false;clearTimeout(LV.msgT);LV.msgT=setTimeout(()=>b.hidden=true,1500)}
-async function captureLive(g){
+/* perspective-correct the sheet: output rectangle -> source quad (square-to-quad homography) */
+function warpSheet(src,Q){
+  const W=src.width,H=src.height,e=0.012,cx=(Q[0][0]+Q[1][0]+Q[2][0]+Q[3][0])/4,cy=(Q[0][1]+Q[1][1]+Q[2][1]+Q[3][1])/4;
+  const P=Q.map(p=>[(p[0]+(p[0]-cx)*e*2)*W,(p[1]+(p[1]-cy)*e*2)*H].map((v,i)=>Math.max(0,Math.min(i?H-1:W-1,v))));
+  const d=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let ow=Math.max(d(P[0],P[1]),d(P[3],P[2])),oh=Math.max(d(P[0],P[3]),d(P[1],P[2]));
+  const k=Math.min(1,1700/Math.max(ow,oh));ow=Math.round(ow*k);oh=Math.round(oh*k);if(ow<200||oh<200)return src;
+  const [x0,y0]=P[0],[x1,y1]=P[1],[x2,y2]=P[2],[x3,y3]=P[3];
+  const dx1=x1-x2,dx2=x3-x2,dy1=y1-y2,dy2=y3-y2,sx=x0-x1+x2-x3,sy=y0-y1+y2-y3;let gg=0,hh=0;
+  if(Math.abs(sx)>1e-9||Math.abs(sy)>1e-9){const den=dx1*dy2-dx2*dy1;gg=(sx*dy2-dx2*sy)/den;hh=(dx1*sy-sx*dy1)/den}
+  const a=x1-x0+gg*x1,b=x3-x0+hh*x3,dd=y1-y0+gg*y1,ee=y3-y0+hh*y3;
+  const sd=src.getContext("2d").getImageData(0,0,W,H).data,out=document.createElement("canvas");out.width=ow;out.height=oh;
+  const oc=out.getContext("2d"),od=oc.createImageData(ow,oh),o=od.data;
+  for(let y=0;y<oh;y++){const v=y/(oh-1);for(let x=0;x<ow;x++){const u=x/(ow-1),w=gg*u+hh*v+1,X=((a*u+b*v+x0)/w)|0,Y=((dd*u+ee*v+y0)/w)|0,si=(Y*W+X)*4,oi=(y*ow+x)*4;o[oi]=sd[si];o[oi+1]=sd[si+1];o[oi+2]=sd[si+2];o[oi+3]=255}}
+  oc.putImageData(od,0,0);return out;
+}
+async function captureLive(g,Q){
   if(LV.busy||!LV.stream)return;
-  if(!canScan()&&!S.pages.length){stopLive();show("home");renderHome();openPay(true);return}
-  LV.busy=true;LV.armed=false;LV.cap=g||frameGray();setHint("busy");
-  const v=$("#camVid"),c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
+  if(!canScan()&&!S.pages.length){pauseLive();show("home");renderHome();openPay(true);return}
+  LV.busy=true;LV.armed=false;LV.cap=g||frameGray();LV.capQ=Q||LV.quad;setHint("busy");
+  const v=$("#camVid");let c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
   flash();beep();try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
   try{
+    const q=Q||LV.quad;if(q){try{c=warpSheet(c,q)}catch(e){}}
     const raw=await new Promise(r=>c.toBlob(r,"image/jpeg",.92));const blob=await prep(raw);
     S.pages.push({blob,url:URL.createObjectURL(blob)});
     if(S.pages.length>=S.pagesPer){
       const job=gradeWork(true);
-      if(job&&S.flow==="one"){LV.busy=false;stopLive();openMark(job);return}
+      if(job&&S.flow==="one"){LV.busy=false;pauseLive();openMark(job);return}
       if(job)bigMsg(`✓ Praca ${job.n}<br><span style="font-size:16px;font-weight:600">odłóż tekstem do dołu</span>`);
     }else bigMsg(`✓ Strona ${S.pages.length} z ${S.pagesPer}<br><span style="font-size:16px;font-weight:600">odwróć kartkę</span>`);
   }catch(e){bigMsg("Nie udało się zrobić zdjęcia",true)}
@@ -1027,7 +1083,7 @@ function removeJob(j){
   if(MK.job===j)MK.job=null;if(S.last===j.res)S.last=null;pump();
 }
 function endLive(){
-  stopLive();
+  pauseLive();
   if(S.pages.length){const job=gradeWork(true);if(!job){S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[]}}
   if(S.jobs.length){renderSeries();show("series");if(!S.serDone)openFinish()}else{show("home");renderHome()}
 }
@@ -1250,7 +1306,7 @@ function renderHome(){
 function wipe(){
   if(S.rules){S.rules=[];S.issues=[];try{renderIssues()}catch(e){}}
   try{$("#serTextBox").hidden=true;$("#serText").textContent=""}catch(e){}
-  if(S.jobs){S.jobs.forEach(j=>{try{j.ctl.abort()}catch(e){}j.pages.forEach(p=>URL.revokeObjectURL(p.url))});S.jobs.length=0;stopVoice();MK.job=null;S.serDone=false;S.marked=false;S.pdfDone=false;clearInterval(serTimer)}
+  if(S.jobs){S.jobs.forEach(j=>{try{j.ctl.abort()}catch(e){}j.pages.forEach(p=>URL.revokeObjectURL(p.url))});S.jobs.length=0;stopVoice();stopLive();MK.job=null;S.serDone=false;S.marked=false;S.pdfDone=false;clearInterval(serTimer)}
   if(S.last){S.last.pages.forEach(p=>p.url&&URL.revokeObjectURL(p.url));S.last=null}
   S.pages.forEach(p=>URL.revokeObjectURL(p.url));S.pages=[];
 }
