@@ -1747,7 +1747,7 @@ function fixHtml(t,od){
   const cnt=t.content?`<div class="small muted">${T("Treść:")} <b>${esc(t.content)}</b> · ${T("sugestia {a}/{b} pkt",{a:fmt(t.points),b:fmt(t.max)})}</div>`:"";
   if(t.items&&t.items.length){
     const eqI=(a,b)=>S.accents?norm(a)===norm(b):strip(a)===strip(b);
-    let its=t.items.filter(x=>!eqI(x.answer,x.correct));if(od&&its.some(x=>x.doubt))its=its.filter(x=>x.doubt);
+    let its=t.items.filter(x=>!eqI(x.answer,x.correct)||(x.doubt&&x.answer&&t.status==="check"&&!t.resolved));if(od&&its.some(x=>x.doubt))its=its.filter(x=>x.doubt);
     if(its.length)return `<div class="fix col">${t.forceCheck&&t.question?`<div class="small warnc">${esc(t.question)}</div>`:""}${cnt}${its.slice(0,5).map(x=>{const [a,b]=x.answer&&x.correct?markPair(x.answer,x.correct):[x.answer?`<span class="badu">${esc(x.answer)}</span>`:`<span class="small muted">${T("brak")}</span>`,`<span class="goodh">${esc(x.correct)}</span>`];const ty=x.answer&&x.correct&&norm(x.correct).length>2&&lev(norm(x.answer),norm(x.correct))===1;return `<div class="fixrow">${x.doubt&&!t.resolved&&t.status==="check"?`<span class="chip chk">?</span>`:""}${x.n?`<span class="small muted">${esc(x.n)}</span>`:""}<span class="hand">${a}</span><span class="arr">→</span><b class="noi18n">${b}</b>${ty?`<span class="small halfc">literówka</span>`:""}</div>`}).join("")}${its.length>5?`<div class="small muted">${T("i jeszcze {n}",{n:its.length-5})}</div>`:""}${t.nItems>0&&t.okCount>0?`<div class="small okc">${T("✓ reszta poprawna ({a} z {b})",{a:t.okCount,b:t.nItems})}</div>`:""}</div>`;
   }
   const c=t.correct&&norm(t.correct)!==norm(t.answer)?t.correct:"";
@@ -1789,7 +1789,7 @@ function itemLoss(x){const a=String(x.answer||"").trim(),c=String(x.correct||"")
 function scoreItems(t){
   if(!t.items||!t.items.length||!(t.nItems>0)||t.type==="open"||t.nItems<t.items.length)return false;
   const v=t.max/t.nItems,r=x=>Math.max(0,Math.min(t.max,Math.round(x*2)/2));
-  const dq=t.items.filter(x=>x.doubt&&x.answer),sure=t.items.filter(x=>!dq.includes(x));
+  const dq=t.items.filter(x=>x.doubt&&x.answer&&itemLoss(x)>0),sure=t.items.filter(x=>!dq.includes(x));
   const base=t.max-v*sure.reduce((a,x)=>a+itemLoss(x),0);
   t.okCount=Math.max(0,t.nItems-t.items.filter(x=>dq.includes(x)||itemLoss(x)>0).length-(t.forceCheck?1:0));
   if(dq.length||t.forceCheck){
@@ -1800,7 +1800,7 @@ function scoreItems(t){
 function applyRules0(t){
   if(!t.resolved&&scoreItems(t))return;
   if(t.status==="check"&&!t.forceCheck&&t.items&&t.items.length&&!["two_marks","line"].includes(t.doubt)){
-    const dq=t.items.filter(x=>x.doubt&&x.answer);
+    const dq=t.items.filter(x=>x.doubt&&x.answer&&itemLoss(x)>0);
     if(!dq.length){t.status=t.points>=t.max?"ok":t.points>0?"partial":"wrong";t.options=null;t.question="";return}
     if(dq[0].spot)t.spot=dq[0].spot;
   }
