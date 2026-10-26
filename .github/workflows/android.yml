@@ -50,17 +50,42 @@ jobs:
         working-directory: android-app
         run: npx cap sync android 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
-      - name: Zbuduj AAB i APK (niepodpisane – podpis dodawany poza GitHubem)
+      - name: Zbuduj AAB i APK
         working-directory: android-app/android
         run: |
           chmod +x gradlew
           ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
-          mkdir -p ../../wynik
-          cp app/build/outputs/bundle/release/app-release.aab ../../wynik/eduskan-unsigned.aab
-          cp app/build/outputs/apk/release/app-release-unsigned.apk ../../wynik/eduskan-unsigned.apk
+
+      - name: Podpisz i sprawdź
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          V="$(cat android-app/version.txt)"
+          AAB=android-app/android/app/build/outputs/bundle/release/app-release.aab
+          APK=android-app/android/app/build/outputs/apk/release/app-release-unsigned.apk
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          cp "$BT/lib/apksigner.jar" ../../wynik/apksigner.jar
-          ls -la ../../wynik
+          unzip -p "$AAB" base/assets/public/index.html > /tmp/i.html; grep -q EDU_I18N /tmp/i.html && echo "OK: aplikacja w AAB (9 jezykow)"
+          unzip -l "$AAB" | grep -E "capacitor.plugins.json|AndroidManifest" | head
+          mkdir -p wynik
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > upload.jks
+            cp "$AAB" "wynik/eduskan-$V.aab"
+            jarsigner -sigalg SHA256withRSA -digestalg SHA-256 -keystore upload.jks -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" "wynik/eduskan-$V.aab" eduskan
+            jarsigner -verify "wynik/eduskan-$V.aab"
+            "$BT/zipalign" -f -p 4 "$APK" aligned.apk
+            "$BT/apksigner" sign --ks upload.jks --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:$KEYSTORE_PASSWORD" --ks-key-alias eduskan --out "wynik/eduskan-$V.apk" aligned.apk
+            "$BT/apksigner" verify --print-certs "wynik/eduskan-$V.apk" | head -3
+            rm -f upload.jks aligned.apk
+            echo "PODPISANE=tak" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Brak sekretow KEYSTORE_BASE64 / KEYSTORE_PASSWORD – pliki niepodpisane"
+            cp "$AAB" wynik/eduskan-unsigned.aab
+            cp "$APK" wynik/eduskan-unsigned.apk
+            cp "$BT/lib/apksigner.jar" wynik/apksigner.jar
+            echo "PODPISANE=nie" >> "$GITHUB_ENV"
+          fi
+          ls -la wynik
 
       - name: Releases
         env:
@@ -69,7 +94,7 @@ jobs:
           V="$(cat android-app/version.txt)"
           gh release create "android-$V-${{ github.run_number }}" wynik/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "EduSkan Android $V (kompilacja ${{ github.run_number }})" \
-            --notes "Niepodpisane pliki AAB/APK (versionCode ${{ github.run_number }}). Podpisane wersje wysyła Claude."
+            --notes "AAB do Sklepu Play i APK do instalacji na telefonie (versionCode ${{ github.run_number }}, podpisane: $PODPISANE)."
 
       - name: Log błędu do Releases
         if: failure()
