@@ -1727,6 +1727,9 @@ Output minified JSON (no spaces or newlines). Reply with only JSON: {"tasks":[{"
       t.answer=String(v.answer??t.answer);t.points=vp;t.conf=vc;
       t.status=vc<0.85?"check":vs;t.reason=String(v.reason||"");
       if(t.status==="check"){if(v.doubt)t.doubt=String(v.doubt);if(v.question)t.question=String(v.question).slice(0,90);const op=cleanOptions(v.options,t.max);if(op)t.options=op}else{t.options=null;t.question=""}
+    }else if(isBlank(v.answer)||isBlank(t.answer)){
+      t.answer=isBlank(v.answer)?"":String(v.answer);t.conf=vc;t.options=null;t.question="";t.reason=String(v.reason||"");
+      if(!t.answer){t.points=0;t.status="wrong"}else{t.points=vp;t.status=vs!=="check"?vs:vp>=t.max?"ok":vp>0?"partial":"wrong"}
     }else{
       t.points=vp;t.conf=Math.min(t.conf,vc);t.status="check";
       t.reason="Niewyraźne pismo.";
@@ -1809,7 +1812,11 @@ function lineHtml(t,s){const wrongish=s!=="ok"&&t.correct&&norm(t.correct)!==nor
 function choose(t,i){const o=t.options[i];t.points=o.points;if(o.answer)t.answer=o.answer;t.choice=i;t.resolved=true}
 function cleanOptions(arr,max){if(!Array.isArray(arr))return null;const o=arr.slice(0,3).map(x=>({label:String(x&&x.label||"").slice(0,40),answer:String(x&&x.answer||"").slice(0,60),points:Math.min(max,Math.max(0,+(x&&x.points)||0))})).filter(x=>x.label);return o.length>=2?o:null}
 const strip=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/[\s.,;:!?()„”"'«»¿¡-]+/g," ").trim();
+function isBlank(s){return /^\s*(brak( odpowiedzi)?|puste( pole)?|pusty|pusto|nic|nie ?uzupe[łl]nion\w*|bez odpowiedzi|empty|blank|none|no answer|not answered|unanswered|leer|keine antwort|vac[ií]o|sin respuesta|vide|pas de r[ée]ponse|pr[áa]zdn\w*|bez odpov[eě]di|vuoto|nessuna risposta|vazio|sem resposta|n\/a|\(\s*\)|\[\s*\]|[-–—_.…?\s]*)\s*$/i.test(String(s??""))}
+/* blank answer = 0 points, never a doubt and never a question */
 function fixIllegible(t){
+  if(isBlank(t.answer))t.answer="";
+  if(t.items)t.items.forEach(x=>{if(isBlank(x.answer)){x.answer="";x.doubt=false;x.kind="empty";x.spot=null}});
   if(t.items){const junk=/^(podpis|imi[eę]|nazwisko|imi[eę] i nazwisko|klasa|data|signature|name|date|unterschrift|nombre|firma|nom|prénom|jméno|meno|nome|assinatura|datum|fecha)$/i,jn=/podpis|nazwisk|imi[eę]|signature|unterschrift|firma|assinatura|puste po/i;
     const before=t.items.length;t.items=t.items.filter(x=>!junk.test(String(x.correct).trim())&&!jn.test(x.n));
     t.items.forEach(x=>{if(/^(brak|puste|pusty|puste pole|empty|none|blank|leer|vacío|vide|prázdné|prázdne|vuoto|vazio|—|-|\.\.\.|…)$/i.test(String(x.answer).trim())){x.answer="";x.doubt=false}});
@@ -1836,6 +1843,7 @@ function scoreItems(t){
     t.points=r(guess);t.status="check";if(!t.doubt)t.doubt="illegible";if(dq[0]&&dq[0].spot)t.spot=dq[0].spot;return true}
   t.ptOpts=null;t.points=r(base);t.status=t.points>=t.max?"ok":t.points>0?"partial":"wrong";t.options=null;t.question="";return true}
 function applyRules0(t){
+  if(!t.resolved&&!t.forceCheck&&!(t.items&&t.items.length)&&!(t.nItems>1)&&!String(t.answer||"").trim()&&String(t.correct||"").trim()&&(t.status==="check"||t.points<=0)){t.points=0;t.status="wrong";t.options=null;t.question="";t.doubt="";t.ptOpts=null;return}
   if(!t.resolved&&scoreItems(t))return;
   if(t.status==="check"&&!t.forceCheck&&t.items&&t.items.length&&!["two_marks","line"].includes(t.doubt)){
     const dq=t.items.filter(x=>x.doubt&&x.answer&&itemLoss(x)>0);
