@@ -659,7 +659,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
       </div>
       <div class="panel">
         <label class="switch"><span><b>Oceny z plusami i minusami</b><br><span class="small muted">np. 4+, 5− na górze i dole każdego przedziału skali</span></span><input type="checkbox" id="pmSw"></label>
-        <label class="switch"><span><b>Tryb dokładny (zalecany)</b><span class="info" role="button" tabindex="0" data-info="precise" aria-label="Co to jest?">i</span><br><span class="small muted">Zadania, które nadal budzą wątpliwość, sprawdza dodatkowo mocniejszy model. Trwa trochę dłużej.</span></span><input type="checkbox" id="precise"></label>
+        <label class="switch" hidden><span><b>Tryb dokładny (zalecany)</b><span class="info" role="button" tabindex="0" data-info="precise" aria-label="Co to jest?">i</span><br><span class="small muted">Zadania, które nadal budzą wątpliwość, sprawdza dodatkowo mocniejszy model. Trwa trochę dłużej.</span></span><input type="checkbox" id="precise"></label>
         <label class="switch"><span><b>Akcenty i znaki diakrytyczne się liczą</b><br><span class="small muted">np. á, ñ, ü, é, ą, ł – brak znaku to błąd w słowie</span></span><input type="checkbox" id="accents"></label>
         <label class="switch"><span><b>Ortografia się liczy</b><br><span class="small muted">Błąd w uzupełnianym słowie odejmuje punkt</span></span><input type="checkbox" id="spell"></label>
       </div>
@@ -675,7 +675,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
         <label class="switch"><span><b>Numer z dziennika</b><span class="info" role="button" tabindex="0" data-info="dnr" aria-label="Co to jest?">i</span><br><span class="small muted">Uczeń pisze swój numer w rogu kartki. Wyniki w PDF ułożą się według numerów.</span></span><input type="checkbox" id="dnrSw"></label>
         <label class="row small" id="classRow" for="classSize"><span class="grow">Uczniów w klasie<br><span class="muted">pokaże, czyjej pracy brakuje</span></span><input class="field" id="classSize" type="number" min="0" max="60" inputmode="numeric" placeholder="np. 26" style="width:96px"></label>
       </div>
-      <div class="panel">
+      <div class="panel" hidden>
         <div><b>Model odczytu</b><br><span class="small muted">Porównaj na tych samych pracach dokładność i koszt skanu.</span></div>
         <div class="seg" style="grid-template-columns:1fr 1fr" role="group" aria-label="Model odczytu">
           <button data-first="default">Ekonomiczny</button><button data-first="complex">Najdokładniejszy</button>
@@ -767,7 +767,7 @@ function i18nDom(){
   walk(document.body);
   new MutationObserver(ms=>ms.forEach(m=>{if(m.type==="characterData")trText(m.target);else if(m.type==="attributes")trEl(m.target);else m.addedNodes.forEach(walk)})).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTR});
 }
-const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get(SCALE_KEY,DEFAULT_SCALE),precise:ls.get("precise",true),pm:UILANG==="pl"&&ls.get("pm",false),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:ls.get("first","default"),spell:ls.get("spell",false),flow:ls.get("flow","stack"),camMode:"photo",voice:ls.get("voice",false),dnr:ls.get("dnr",false),classSize:ls.get("classSize",0),
+const S={used:ls.get("used",0),pro:ls.get("pro",false),key:ls.get("key",null),scale:ls.get(SCALE_KEY,DEFAULT_SCALE),precise:true,pm:UILANG==="pl"&&ls.get("pm",false),subject:ls.get("subject","auto"),lang:ls.get("lang","auto"),accents:ls.get("accents",true),first:"default",spell:ls.get("spell",false),flow:ls.get("flow","stack"),camMode:"photo",voice:ls.get("voice",false),dnr:ls.get("dnr",false),classSize:ls.get("classSize",0),
   mode:"student",pagesPer:ls.get("pagesPer",1),pages:[],last:null,ctl:null,hiddenAt:0,sample:null,maxImg:5,draftKey:null};
 
 /* ---------- intro ---------- */
